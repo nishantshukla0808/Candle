@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Flame, Zap, BookOpen, Trophy, Star } from 'lucide-react';
+import { Flame, Zap, BookOpen, Trophy, Star, Heart } from 'lucide-react';
 import { BottomNav, TopBar } from '../dashboard/page';
 import { getLevel } from '@/lib/lessonData';
 
@@ -12,6 +12,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hearts, setHearts] = useState(5);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/');
@@ -20,12 +21,14 @@ export default function LeaderboardPage() {
 
   const fetchData = async () => {
     try {
-      const [lRes, pRes] = await Promise.all([
+      const [lRes, pRes, hRes] = await Promise.all([
         fetch('/api/leaderboard'),
         fetch('/api/user/profile'),
+        fetch('/api/user/hearts'),
       ]);
       if (lRes.ok) setLeaderboard((await lRes.json()).leaderboard);
       if (pRes.ok) setProfile((await pRes.json()).user);
+      if (hRes.ok) setHearts((await hRes.json()).hearts ?? 5);
     } catch (e) {}
     setLoading(false);
   };
@@ -43,7 +46,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen pb-24" style={{ background: '#131F24' }}>
-      <TopBar xp={profile?.xp || 0} streak={profile?.streak || 0} title="Leaderboard" />
+      <TopBar xp={profile?.xp || 0} streak={profile?.streak || 0} hearts={hearts} title="Leaderboard" />
 
       <div className="max-w-lg mx-auto px-4 py-5">
         {/* Top 3 podium */}

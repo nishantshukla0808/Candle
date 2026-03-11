@@ -258,7 +258,7 @@
 
 /* Lesson content typography */
 .lesson-prose h2 {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #FFFFFF;
   margin: 1.5rem 0 0.75rem;
@@ -266,36 +266,37 @@
 }
 
 .lesson-prose h3 {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  color: var(--blue);
+  color: #1CB0F6;
   margin: 1.25rem 0 0.5rem;
 }
 
 .lesson-prose h4 {
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--orange);
+  color: #FF9600;
   margin: 1rem 0 0.4rem;
 }
 
 .lesson-prose p {
-  color: var(--text-secondary);
-  line-height: 1.7;
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
+  color: #B8D4E3;
+  line-height: 1.75;
+  margin-bottom: 0.875rem;
+  font-size: 1rem;
 }
 
 .lesson-prose ul {
   margin-bottom: 1rem;
+  padding-left: 1.5rem;
 }
 
 .lesson-prose ul li {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.7;
+  color: #B8D4E3;
+  font-size: 1rem;
+  line-height: 1.75;
   padding-left: 0.5rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
 }
 
 .lesson-prose strong {
@@ -440,3 +441,39 @@
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+/* ===== HEARTS FEATURE ===== */
+
+/* Heart pulse animation */
+@keyframes heartPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.heart-low {
+  animation: heartPulse 1.5s ease-in-out infinite;
+}
+
+/* ===== LESSON SLIDES ===== */
+
+.slide-card {
+  min-height: 200px;
+}
+
+/* ===== MODAL STYLES ===== */
+
+.modal-backdrop {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

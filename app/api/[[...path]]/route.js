@@ -14,10 +14,39 @@ async function getAuthUser(request) {
     if (!session?.user?.email) return null;
     const db = await getDb();
     const user = await db.collection('users').findOne({ email: session.user.email.toLowerCase() });
+    if (user) {
+      // Check and refill hearts if needed (daily reset)
+      await checkAndRefillHearts(db, user);
+      // Re-fetch user after potential hearts update
+      return await db.collection('users').findOne({ email: session.user.email.toLowerCase() });
+    }
     return user;
   } catch (err) {
     console.error('getAuthUser error:', err);
     return null;
+  }
+}
+
+// Helper: Check and refill hearts daily
+async function checkAndRefillHearts(db, user) {
+  const now = new Date();
+  const lastRefill = user.heartsLastRefill ? new Date(user.heartsLastRefill) : null;
+  
+  // If no lastRefill recorded or it's been more than 24 hours, refill hearts
+  if (!lastRefill || (now - lastRefill) >= 24 * 60 * 60 * 1000) {
+    const currentHearts = user.hearts ?? 5;
+    if (currentHearts < 5) {
+      await db.collection('users').updateOne(
+        { id: user.id },
+        { $set: { hearts: 5, heartsLastRefill: now.toISOString() } }
+      );
+    } else if (!lastRefill) {
+      // Just set the refill date if hearts are already full
+      await db.collection('users').updateOne(
+        { id: user.id },
+        { $set: { heartsLastRefill: now.toISOString() } }
+      );
+    }
   }
 }
 
@@ -185,6 +214,18 @@ export async function GET(request, { params }) {
       });
     }
 
+    // GET /api/user/hearts
+    if (route === 'user/hearts') {
+      const user = await getAuthUser(request);
+      if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const hearts = user.hearts ?? 5;
+      const heartsLastRefill = user.heartsLastRefill || null;
+      const now = new Date();
+      const lastRefill = heartsLastRefill ? new Date(heartsLastRefill) : null;
+      const nextRefillMs = lastRefill ? Math.max(0, 24 * 60 * 60 * 1000 - (now - lastRefill)) : 0;
+      return NextResponse.json({ hearts, heartsLastRefill, nextRefillMs, maxHearts: 5 });
+    }
+
     return NextResponse.json({ error: 'Route not found' }, { status: 404 });
   } catch (err) {
     console.error('GET error:', err);
@@ -218,6 +259,8 @@ export async function POST(request, { params }) {
         xp: 0,
         level: 1,
         streak: 0,
+        hearts: 5,
+        heartsLastRefill: new Date().toISOString(),
         lastActiveDate: null,
         badges: [],
         completedLessons: [],
@@ -273,6 +316,9 @@ export async function POST(request, { params }) {
       const lesson = LESSONS[lessonId];
       if (!lesson) return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
 
+      // Check hearts before processing
+      const currentHearts = user.hearts ?? 5;
+
       const { answers } = await request.json();
       const results = lesson.quiz.map((q, i) => ({
         questionId: q.id,
@@ -285,6 +331,11 @@ export async function POST(request, { params }) {
       const score = results.filter(r => r.correct).length;
       const totalQuestions = lesson.quiz.length;
       const percentage = Math.round((score / totalQuestions) * 100);
+      const wrongAnswers = totalQuestions - score;
+
+      // Deduct hearts for wrong answers
+      const heartsToDeduct = Math.min(wrongAnswers, currentHearts);
+      const newHearts = Math.max(0, currentHearts - heartsToDeduct);
 
       // Award bonus XP for quiz
       const bonusXP = Math.round((score / totalQuestions) * lesson.xpReward * 0.5);
@@ -302,7 +353,7 @@ export async function POST(request, { params }) {
       await db.collection('users').updateOne(
         { id: user.id },
         {
-          $set: { xp: newXp, level: newLevel },
+          $set: { xp: newXp, level: newLevel, hearts: newHearts },
           $push: { completedQuizzes: quizRecord }
         }
       );
@@ -318,7 +369,7 @@ export async function POST(request, { params }) {
         }
       }
 
-      return NextResponse.json({ results, score, totalQuestions, percentage, bonusXP, newXp });
+      return NextResponse.json({ results, score, totalQuestions, percentage, bonusXP, newXp, heartsLost: heartsToDeduct, heartsRemaining: newHearts });
     }
 
     // POST /api/daily-challenge/complete

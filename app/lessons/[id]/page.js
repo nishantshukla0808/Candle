@@ -3,7 +3,28 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Star, CheckCircle, XCircle, Zap, ChevronRight, BookOpen } from 'lucide-react';
+import { ArrowLeft, Star, CheckCircle, XCircle, Zap, ChevronRight, ChevronLeft, BookOpen, Heart } from 'lucide-react';
+import CandleLogo from '@/components/CandleLogo';
+import AuthModal from '@/components/AuthModal';
+
+// Parse HTML content into slides based on h2/h3 tags or sections
+function parseContentToSlides(html) {
+  if (!html) return [];
+  // Simple approach: split by h2 or h3 tags
+  const parts = html.split(/(<h[23]>.*?<\/h[23]>)/gi);
+  const slides = [];
+  let currentSlide = '';
+  for (const part of parts) {
+    if (part.match(/<h[23]>/i)) {
+      if (currentSlide.trim()) slides.push(currentSlide.trim());
+      currentSlide = part;
+    } else {
+      currentSlide += part;
+    }
+  }
+  if (currentSlide.trim()) slides.push(currentSlide.trim());
+  return slides.length > 0 ? slides : [html];
+}
 
 // Confetti component
 function Confetti() {
@@ -44,23 +65,44 @@ export default function LessonDetailPage() {
   const [currentQ, setCurrentQ] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  
+  // New states for slides and hearts
+  const [slides, setSlides] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [hearts, setHearts] = useState(5);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const isGuest = status !== 'authenticated';
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/');
-    if (status === 'authenticated' && lessonId) fetchLesson();
+    if (lessonId) fetchLesson();
   }, [status, lessonId]);
 
   const fetchLesson = async () => {
     try {
-      const [lRes, qRes] = await Promise.all([
+      const promises = [
         fetch(`/api/lessons/${lessonId}`),
         fetch(`/api/quiz/${lessonId}`),
-      ]);
-      if (lRes.ok) setLesson(await lRes.json());
-      if (qRes.ok) {
-        const qData = await qRes.json();
+      ];
+      if (!isGuest) {
+        promises.push(fetch('/api/user/hearts'));
+      }
+      const responses = await Promise.all(promises);
+      
+      if (responses[0].ok) {
+        const lessonData = await responses[0].json();
+        setLesson(lessonData);
+        // Parse content into slides
+        const parsedSlides = parseContentToSlides(lessonData.content);
+        setSlides(parsedSlides);
+      }
+      if (responses[1].ok) {
+        const qData = await responses[1].json();
         setQuiz(qData.quiz);
         setAnswers(new Array(qData.quiz.length).fill(null));
+      }
+      if (responses[2] && responses[2].ok) {
+        const heartsData = await responses[2].json();
+        setHearts(heartsData.hearts ?? 5);
       }
     } catch (e) {}
     setLoading(false);
@@ -75,6 +117,14 @@ export default function LessonDetailPage() {
   };
 
   const startQuiz = () => {
+    if (isGuest) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (hearts <= 0) {
+      alert('You need at least 1 heart to take a quiz. Hearts refill daily!');
+      return;
+    }
     completeLesson();
     setPhase('quiz');
     setCurrentQ(0);
@@ -297,59 +347,146 @@ export default function LessonDetailPage() {
     );
   }
 
-  // ===== LESSON CONTENT =====
+  // ===== LESSON CONTENT WITH SLIDES =====
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#131F24' }}>
-      {/* Top bar */}
-      <div className="sticky top-0 z-50 px-4 py-3 flex items-center gap-3" style={{ background: '#131F24', borderBottom: '2px solid #2D4A58' }}>
-        <button onClick={() => router.push('/dashboard')} className="text-candle-muted">
-          <ArrowLeft size={22} style={{ color: '#8DA8B5' }} />
-        </button>
-        <div className="flex-1">
-          <div className="h-2 rounded-full" style={{ background: '#1C2F39' }}>
-            <div className="h-full rounded-full" style={{ width: lesson.completed ? '100%' : '10%', background: '#58CC02', transition: 'width 1s ease' }} />
-          </div>
+    <div className="min-h-screen flex flex-col" style={{ background: '#1a2f3e' }}>
+      {/* Top bar with progress */}
+      <div className="sticky top-0 z-50" style={{ background: '#1a2f3e' }}>
+        {/* Green progress bar */}
+        <div className="h-1.5 w-full" style={{ background: '#2d4a58' }}>
+          <div className="h-full transition-all duration-500" style={{
+            width: `${((currentSlide + 1) / slides.length) * 100}%`,
+            background: '#58CC02'
+          }} />
         </div>
-        <div className="flex items-center gap-1">
-          <Zap size={15} style={{ color: '#FFD700' }} />
-          <span className="text-xs font-black" style={{ color: '#FFD700' }}>+{lesson.xpReward} XP</span>
+        
+        {/* Top navigation bar */}
+        <div className="px-4 py-3 flex items-center justify-between">
+          <button onClick={() => router.push('/dashboard')} className="text-white hover:opacity-75 transition-opacity">
+            <ArrowLeft size={22} />
+          </button>
+          
+          <span className="text-sm font-bold text-white">
+            {currentSlide + 1}/{slides.length}
+          </span>
+          
+          <div className="flex items-center gap-2">
+            {!isGuest && (
+              <div className="flex items-center gap-1.5">
+                <Heart size={16} fill={hearts > 0 ? '#ef4444' : 'none'} color="#ef4444" />
+                <span className="text-sm font-bold text-red-400">{hearts}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <Zap size={15} style={{ color: '#FFD700' }} />
+              <span className="text-sm font-black" style={{ color: '#FFD700' }}>+{lesson.xpReward}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 px-5 py-5 max-w-lg mx-auto w-full">
-        {/* Lesson header */}
-        <div className="mb-5">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full uppercase" style={{
-              background: lesson.difficulty === 'beginner' ? 'rgba(88,204,2,0.15)' :
-                lesson.difficulty === 'intermediate' ? 'rgba(28,176,246,0.15)' : 'rgba(165,96,245,0.15)',
-              color: lesson.difficulty === 'beginner' ? '#58CC02' :
-                lesson.difficulty === 'intermediate' ? '#1CB0F6' : '#A560F5'
+      {/* Hearts warning */}
+      {!isGuest && hearts <= 2 && hearts > 0 && (
+        <div className="px-4 py-2 text-center text-sm" style={{ background: 'rgba(255,165,0,0.15)', color: '#ffa500' }}>
+          ⚠️ Low on hearts! Be careful with quiz answers.
+        </div>
+      )}
+      {!isGuest && hearts === 0 && (
+        <div className="px-4 py-2 text-center text-sm" style={{ background: 'rgba(255,75,75,0.15)', color: '#ff4b4b' }}>
+          ❤️‍🩹 No hearts left! Hearts refill daily. You can still read lessons.
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col px-5 py-6 max-w-3xl mx-auto w-full">
+        {/* Lesson header - centered */}
+        <div className="mb-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <span className="text-xs font-bold px-3 py-1 rounded-full uppercase" style={{
+              background: lesson.difficulty === 'beginner' ? '#58CC02' : 
+                lesson.difficulty === 'intermediate' ? '#FF9600' : '#ef4444',
+              color: 'white'
             }}>{lesson.difficulty}</span>
-            <span className="text-xs" style={{ color: '#5C7A87' }}>{lesson.duration}</span>
-            {lesson.completed && <CheckCircle size={14} style={{ color: '#58CC02' }} />}
+            <div className="flex items-center gap-1 text-sm" style={{ color: '#5C7A87' }}>
+              <span>{lesson.duration}</span>
+              {lesson.completed && <CheckCircle size={14} style={{ color: '#58CC02' }} />}
+            </div>
           </div>
-          <h1 className="text-xl font-black text-white leading-tight">{lesson.title}</h1>
-          <p className="text-sm mt-1" style={{ color: '#8DA8B5' }}>{lesson.subtitle}</p>
+          <h1 className="text-2xl font-black text-white leading-tight mb-2">
+            {lesson.title}
+          </h1>
+          <p className="text-sm" style={{ color: '#7FA4B8' }}>{lesson.subtitle}</p>
         </div>
 
-        {/* Lesson body */}
-        <div
-          className="lesson-prose"
-          dangerouslySetInnerHTML={{ __html: lesson.content }}
-        />
+        {/* Slide indicator dots */}
+        <div className="flex items-center justify-center gap-1.5 mb-4">
+          {slides.map((_, i) => (
+            <div key={i} className="rounded-full transition-all duration-300" style={{
+              width: '10px',
+              height: '10px',
+              background: i === currentSlide ? '#58CC02' : 
+                i < currentSlide ? '#58CC02' : 'rgba(255,255,255,0.2)'
+            }} />
+          ))}
+        </div>
+
+        {/* Current slide card */}
+        <div className="flex-1 mb-6">
+          <div className="rounded-2xl p-8 min-h-[300px]" style={{ 
+            background: '#213d4f',
+            border: '1px solid #2d4a58'
+          }}>
+            <div
+              className="lesson-prose"
+              dangerouslySetInnerHTML={{ __html: slides[currentSlide] || '' }}
+            />
+          </div>
+        </div>
+
+        {/* Single Continue/Take Quiz button */}
+        <div className="mt-auto">
+          {currentSlide < slides.length - 1 ? (
+            <button
+              onClick={() => setCurrentSlide(p => p + 1)}
+              className="w-full py-4 rounded-xl text-base font-black uppercase tracking-wider transition-all"
+              style={{
+                background: '#58CC02',
+                color: 'white',
+                border: 'none',
+                boxShadow: '0 4px 0 #469902'
+              }}
+            >
+              CONTINUE <ChevronRight size={20} style={{ display: 'inline', marginLeft: '4px' }} />
+            </button>
+          ) : (
+            <button
+              onClick={startQuiz}
+              className="w-full py-4 rounded-xl text-base font-black uppercase tracking-wider transition-all"
+              style={{
+                background: '#58CC02',
+                color: 'white',
+                border: 'none',
+                boxShadow: '0 4px 0 #469902'
+              }}
+            >
+              <Zap size={20} style={{ display: 'inline', marginRight: '8px' }} />
+              {lesson.completed ? 'RETAKE QUIZ' : 'TAKE QUIZ'}
+            </button>
+          )}
+          
+          <p className="text-center text-xs mt-3" style={{ color: '#5C7A87' }}>
+            {quiz?.length || 5} questions • +{lesson.xpReward} XP on completion
+          </p>
+        </div>
       </div>
 
-      {/* CTA */}
-      <div className="p-5 max-w-lg mx-auto w-full">
-        <button onClick={startQuiz} className="btn-primary">
-          {lesson.completed ? 'Retake Quiz' : 'Take Quiz'}
-        </button>
-        <p className="text-center text-xs mt-2" style={{ color: '#5C7A87' }}>
-          {quiz?.length || 5} questions • +{lesson.xpReward} XP on completion
-        </p>
-      </div>
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          message="Sign in to take quizzes and track your progress!"
+        />
+      )}
     </div>
   );
 }

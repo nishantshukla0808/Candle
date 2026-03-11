@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Zap, Flame, BookOpen, Shield, LogOut, ChevronRight, Star, Lock, CheckCircle } from 'lucide-react';
+import { Zap, Flame, BookOpen, Shield, LogOut, ChevronRight, Star, Lock, CheckCircle, Heart } from 'lucide-react';
 import { BottomNav, TopBar } from '../dashboard/page';
 import { getLevel, getNextLevel, getLevelProgress, LEVEL_NAMES, BADGES as ALL_BADGES } from '@/lib/lessonData';
 
@@ -11,6 +11,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hearts, setHearts] = useState(5);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/');
@@ -19,8 +20,12 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch('/api/user/profile');
-      if (res.ok) setProfile((await res.json()).user);
+      const [pRes, hRes] = await Promise.all([
+        fetch('/api/user/profile'),
+        fetch('/api/user/hearts'),
+      ]);
+      if (pRes.ok) setProfile((await pRes.json()).user);
+      if (hRes.ok) setHearts((await hRes.json()).hearts ?? 5);
     } catch (e) {}
     setLoading(false);
   };
@@ -52,7 +57,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen pb-24" style={{ background: '#131F24' }}>
-      <TopBar xp={xp} streak={streak} title="Profile" />
+      <TopBar xp={xp} streak={streak} hearts={hearts} title="Profile" />
 
       <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
         {/* Avatar + Name */}
@@ -88,10 +93,10 @@ export default function ProfilePage() {
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3">
           {[
+            { icon: Heart, label: 'Hearts', value: hearts, color: '#ef4444' },
             { icon: Zap, label: 'Total XP', value: xp.toLocaleString(), color: '#FFD700' },
             { icon: Flame, label: 'Day Streak', value: streak, color: '#FF9600' },
             { icon: BookOpen, label: 'Lessons Done', value: completedLessons.length, color: '#58CC02' },
-            { icon: Shield, label: 'Badges', value: badges.length, color: '#A560F5' },
           ].map(({ icon: Icon, label, value, color }) => (
             <div key={label} className="c-card p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center"

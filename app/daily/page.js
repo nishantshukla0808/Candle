@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, Zap, Flame, Sparkles, Clock, ArrowRight, RotateCcw } from 'lucide-react';
+import { CheckCircle, Zap, Flame, Sparkles, Clock, ArrowRight, RotateCcw, Heart } from 'lucide-react';
 import { BottomNav, TopBar } from '../dashboard/page';
 
 export default function DailyPage() {
@@ -15,6 +15,7 @@ export default function DailyPage() {
   const [loading, setLoading] = useState(true);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [hearts, setHearts] = useState(5);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/');
@@ -23,12 +24,14 @@ export default function DailyPage() {
 
   const fetchData = async () => {
     try {
-      const [cRes, pRes] = await Promise.all([
+      const [cRes, pRes, hRes] = await Promise.all([
         fetch('/api/daily-challenge'),
         fetch('/api/user/profile'),
+        fetch('/api/user/hearts'),
       ]);
       if (cRes.ok) setChallenge((await cRes.json()).challenge);
       if (pRes.ok) setProfile((await pRes.json()).user);
+      if (hRes.ok) setHearts((await hRes.json()).hearts ?? 5);
     } catch (e) {}
     setLoading(false);
   };
@@ -75,7 +78,7 @@ export default function DailyPage() {
 
   return (
     <div className="min-h-screen pb-24" style={{ background: '#131F24' }}>
-      <TopBar xp={xp} streak={streak} title="Daily Challenge" />
+      <TopBar xp={xp} streak={streak} hearts={hearts} title="Daily Challenge" />
 
       <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
         {/* Date & Streak */}

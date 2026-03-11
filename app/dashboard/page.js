@@ -1,10 +1,12 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Flame, Trophy, User, Zap, BookOpen, Star, Lock, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { Home, Flame, Trophy, User, Zap, BookOpen, Star, Lock, CheckCircle, ChevronRight, Heart } from 'lucide-react';
 import { getLevel, getNextLevel, getLevelProgress, MODULES } from '@/lib/lessonData';
+import CandleLogo from '@/components/CandleLogo';
+import AuthModal from '@/components/AuthModal';
 
 // ---- Bottom Navigation ----
 export function BottomNav() {
@@ -28,23 +30,31 @@ export function BottomNav() {
 }
 
 // ---- Top Bar ----
-export function TopBar({ xp = 0, streak = 0, title = '' }) {
+export function TopBar({ xp = 0, streak = 0, hearts = 5, title = '', isGuest = false }) {
   return (
     <div className="sticky top-0 z-50 px-4 py-3 flex items-center justify-between" style={{ background: '#131F24', borderBottom: '2px solid #2D4A58' }}>
       {title ? (
         <h2 className="text-base font-black text-white">{title}</h2>
       ) : (
         <div className="flex items-center gap-1.5">
-          <span className="text-lg font-black" style={{ color: '#FFD700' }}>CANDLE</span>
+          <CandleLogo size={28} />
+          <span className="text-base font-black" style={{ color: '#58CC02' }}>CANDLE</span>
         </div>
       )}
       <div className="flex items-center gap-3">
+        {/* Hearts */}
+        <div className="flex items-center gap-1">
+          <Heart size={17} fill="#FF4B4B" color="#FF4B4B" />
+          <span className="font-black text-sm" style={{ color: '#FF4B4B' }}>
+            {isGuest ? '5' : hearts}
+          </span>
+        </div>
         <div className="flex items-center gap-1.5">
-          <Flame size={18} style={{ color: '#FF9600' }} />
+          <Flame size={17} style={{ color: '#FF9600' }} />
           <span className="font-black text-sm" style={{ color: '#FF9600' }}>{streak}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Zap size={18} style={{ color: '#FFD700' }} />
+          <Zap size={17} style={{ color: '#FFD700' }} />
           <span className="font-black text-sm" style={{ color: '#FFD700' }}>{xp.toLocaleString()}</span>
         </div>
       </div>
@@ -115,10 +125,20 @@ export default function DashboardPage() {
   const [lessonsData, setLessonsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeModule, setActiveModule] = useState('module-1');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
+
+  const isGuest = status !== 'authenticated';
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/');
-    if (status === 'authenticated') { fetchProfile(); fetchLessons(); }
+    if (status === 'authenticated') {
+      fetchProfile();
+      fetchLessons();
+    } else if (status === 'unauthenticated') {
+      // Still load lessons for guests
+      fetchLessons();
+      setLoading(false);
+    }
   }, [status]);
 
   const fetchProfile = async () => {
@@ -136,7 +156,23 @@ export default function DashboardPage() {
     } catch (e) {}
   };
 
-  if (loading || status === 'loading') {
+  const handleLessonClick = (lessonId, isUnlocked) => {
+    if (!isUnlocked) return;
+    if (isGuest) {
+      setAuthMessage('Sign in to start learning and track your progress');
+      setShowAuthModal(true);
+      return;
+    }
+    router.push(`/lessons/${lessonId}`);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    // Session will update and trigger re-render
+    window.location.reload();
+  };
+
+  if (loading && status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#131F24' }}>
         <div className="text-center">
@@ -152,27 +188,45 @@ export default function DashboardPage() {
   const nextLevel = getNextLevel(xp);
   const progress = getLevelProgress(xp);
   const streak = profile?.streak || 0;
+  const hearts = profile?.hearts ?? 5;
   const completedLessons = profile?.completedLessons || [];
 
   const moduleData = MODULES.find(m => m.id === activeModule);
   const moduleLessons = lessonsData.filter(l => l.moduleId === activeModule);
 
   const isModuleUnlocked = (module) => {
+    if (isGuest) return !module.requiredLessons; // Only first module for guests
     if (!module.requiredLessons) return true;
     return module.requiredLessons.every(l => completedLessons.includes(l));
   };
 
   const isLessonUnlocked = (index) => {
-    if (!isModuleUnlocked(moduleData)) return false;
+    if (!moduleData || !isModuleUnlocked(moduleData)) return false;
+    if (isGuest) return index === 0; // Only first lesson clickable for guests
     if (index === 0) return true;
     return completedLessons.includes(moduleLessons[index - 1]?.id);
   };
 
   return (
     <div className="min-h-screen pb-24" style={{ background: '#131F24' }}>
-      <TopBar xp={xp} streak={streak} />
+      <TopBar xp={xp} streak={streak} hearts={hearts} isGuest={isGuest} />
 
       <div className="max-w-lg mx-auto px-4">
+        {/* Guest banner */}
+        {isGuest && (
+          <div className="mt-3 p-3 rounded-2xl flex items-center justify-between"
+            style={{ background: 'rgba(28,176,246,0.1)', border: '1.5px solid rgba(28,176,246,0.3)' }}>
+            <div>
+              <p className="text-sm font-black text-white">Start your learning journey!</p>
+              <p className="text-xs" style={{ color: '#8DA8B5' }}>Sign in to track progress & earn XP</p>
+            </div>
+            <button onClick={() => { setAuthMessage(''); setShowAuthModal(true); }}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white flex-shrink-0"
+              style={{ background: '#1CB0F6' }}>
+              Sign In
+            </button>
+          </div>
+        )}
         {/* Level progress */}
         <div className="py-4">
           <div className="flex items-center justify-between mb-2">
@@ -192,6 +246,27 @@ export default function DashboardPage() {
             <div className="xp-fill" style={{ width: `${progress}%` }} />
           </div>
         </div>
+
+        {/* Hearts status (when low) */}
+        {!isGuest && hearts <= 2 && hearts > 0 && (
+          <div className="mb-3 p-3 rounded-2xl flex items-center gap-3"
+            style={{ background: 'rgba(255,75,75,0.08)', border: '1.5px solid rgba(255,75,75,0.3)' }}>
+            <Heart size={20} fill="#FF4B4B" color="#FF4B4B" />
+            <div>
+              <p className="text-sm font-bold" style={{ color: '#FF4B4B' }}>Low on hearts!</p>
+              <p className="text-xs" style={{ color: '#8DA8B5' }}>You have {hearts} heart{hearts !== 1 ? 's' : ''} left. Hearts refill daily.</p>
+            </div>
+          </div>
+        )}
+
+        {!isGuest && hearts === 0 && (
+          <div className="mb-3 p-4 rounded-2xl text-center"
+            style={{ background: 'rgba(255,75,75,0.1)', border: '2px solid rgba(255,75,75,0.4)' }}>
+            <Heart size={32} color="#FF4B4B" style={{ margin: '0 auto 8px' }} />
+            <p className="text-base font-black" style={{ color: '#FF4B4B' }}>No hearts left!</p>
+            <p className="text-xs mt-1" style={{ color: '#8DA8B5' }}>Your hearts will refill in a few hours. Come back tomorrow!</p>
+          </div>
+        )}
 
         {/* Module selector */}
         <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-hide">
@@ -257,16 +332,16 @@ export default function DashboardPage() {
 
                 <div className={`flex items-center gap-3 ${isRight ? 'flex-row-reverse' : ''}`}>
                   {/* Node */}
-                  <Link
-                    href={unlocked ? `/lessons/${lesson.id}` : '#'}
-                    className={`flex-shrink-0 ${!unlocked ? 'cursor-not-allowed' : ''}`}
+                  <div
+                    onClick={() => handleLessonClick(lesson.id, unlocked)}
+                    className={`flex-shrink-0 ${unlocked ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                   >
                     <div className="flex flex-col items-center gap-2">
                       {/* Speech bubble for active */}
                       {unlocked && !completed && (
                         <div className="px-2.5 py-1 rounded-lg text-xs font-black text-white mb-1"
                           style={{ background: '#1CB0F6', borderRadius: '8px 8px 8px 2px' }}>
-                          START
+                          {isGuest ? 'PREVIEW' : 'START'}
                         </div>
                       )}
                       <div
@@ -282,10 +357,10 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </div>
 
                   {/* Info card */}
-                  <Link href={unlocked ? `/lessons/${lesson.id}` : '#'} className={`flex-1 ${!unlocked ? 'cursor-not-allowed' : ''}`}>
+                  <div onClick={() => handleLessonClick(lesson.id, unlocked)} className={`flex-1 ${unlocked ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                     <div className={`c-card p-3 transition-all ${
                       completed ? 'border-candle-green/40' :
                       unlocked ? 'border-candle-blue/40' : 'opacity-50'
@@ -315,7 +390,7 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 </div>
               </div>
             );
@@ -333,6 +408,14 @@ export default function DashboardPage() {
       </div>
 
       <BottomNav />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        message={authMessage}
+      />
     </div>
   );
 }

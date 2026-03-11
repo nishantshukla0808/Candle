@@ -3,43 +3,7 @@ import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { TrendingUp, BookOpen, Trophy, Zap, ChevronRight, Eye, EyeOff } from 'lucide-react';
-
-// Candle mascot SVG
-function CandleMascot({ size = 120 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Body - coin shape */}
-      <circle cx="60" cy="70" r="38" fill="#FFD700" />
-      <circle cx="60" cy="70" r="32" fill="#FFC200" />
-      {/* Shine */}
-      <ellipse cx="50" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-25 50 56)" />
-      {/* Eyes */}
-      <circle cx="51" cy="66" r="5" fill="white" />
-      <circle cx="69" cy="66" r="5" fill="white" />
-      <circle cx="52.5" cy="67.5" r="3" fill="#1C2F39" />
-      <circle cx="70.5" cy="67.5" r="3" fill="#1C2F39" />
-      {/* Eye shine */}
-      <circle cx="53.5" cy="66.5" r="1" fill="white" />
-      <circle cx="71.5" cy="66.5" r="1" fill="white" />
-      {/* Smile */}
-      <path d="M 50 78 Q 60 86 70 78" stroke="#1C2F39" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      {/* Chart lines on body */}
-      <polyline points="44,75 49,68 55,72 62,62 70,65 76,58" stroke="rgba(28,48,57,0.4)" strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Candle flame */}
-      <ellipse cx="60" cy="28" rx="8" ry="12" fill="#FF9600" />
-      <ellipse cx="60" cy="24" rx="5" ry="8" fill="#FFD700" />
-      <ellipse cx="60" cy="21" rx="3" ry="5" fill="#FFF" opacity="0.6" />
-      {/* Candle stick */}
-      <rect x="56" y="38" width="8" height="12" rx="2" fill="#FFD700" />
-      {/* Arms */}
-      <path d="M 25 70 Q 15 60 22 52" stroke="#FFD700" strokeWidth="7" strokeLinecap="round" fill="none" />
-      <path d="M 95 70 Q 105 60 98 52" stroke="#FFD700" strokeWidth="7" strokeLinecap="round" fill="none" />
-      {/* Left hand holding chart */}
-      <rect x="10" y="44" width="14" height="10" rx="3" fill="#58CC02" />
-      <polyline points="12,52 14,48 16,50 18,45 20,47 22,44" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-    </svg>
-  );
-}
+import CandleLogo from '@/components/CandleLogo';
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -88,7 +52,7 @@ export default function HomePage() {
       <div className="min-h-screen flex flex-col" style={{ background: '#131F24' }}>
         {/* Header */}
         <div className="p-4 pt-8 text-center">
-          <CandleMascot size={80} />
+          <CandleLogo size={80} />
           <h1 className="text-2xl font-black text-white mt-2">CANDLE</h1>
           <p className="text-candle-muted text-sm">Master the stock market</p>
         </div>
@@ -201,7 +165,7 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col items-center justify-center px-5 py-12 text-center">
         {/* Mascot */}
         <div className="mb-6" style={{ animation: 'bounceIn 0.6s ease' }}>
-          <CandleMascot size={140} />
+          <CandleLogo size={140} />
         </div>
 
         <h1 className="text-4xl font-black text-white mb-2 tracking-tight">CANDLE</h1>
@@ -226,10 +190,21 @@ export default function HomePage() {
         </div>
 
         <div className="w-full max-w-sm space-y-3">
-          <button onClick={() => setMode('register')} className="btn-primary">
+          <button 
+            type="button"
+            onClick={() => {
+              console.log('Get Started clicked - navigating to dashboard');
+              router.push('/dashboard');
+            }} 
+            className="btn-primary"
+          >
             Get Started - It's Free
           </button>
-          <button onClick={() => setMode('login')} className="btn-secondary">
+          <button 
+            type="button"
+            onClick={() => setMode('login')} 
+            className="btn-secondary"
+          >
             I Already Have an Account
           </button>
         </div>
