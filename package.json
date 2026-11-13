@@ -1,0 +1,41 @@
+{
+  "description": "Candle — gamified financial learning platform (Phase 0: production skeleton)",
+  "devDependencies": {
+    "eslint": "^9.24.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.6.3",
+    "json-schema-traverse": "^1.0.0",
+    "fast-uri": "^3.1.9",
+    "require-from-string": "^2.0.2",
+    "ajv-formats": "^3.0.1",
+    "fast-deep-equal": "^3.1.3",
+    "typescript-eslint": "^8.46.0"
+  },
+  "engines": {
+    "node": ">=20 <25"
+  },
+  "name": "candle",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:api": "npm run build --workspace=@candle/api",
+    "build:web": "npm run build --workspace=@candle/web",
+    "dev:api": "npm run dev --workspace=@candle/api",
+    "dev:web": "npm run dev --workspace=@candle/web",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml}\"",
+    "lint": "eslint . --max-warnings=0",
+    "prisma:generate": "npm run prisma:generate --workspace=@candle/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace=@candle/api",
+    "test": "npm run test --workspaces --if-present",
+    "test:api": "npm run test --workspace=@candle/api",
+    "test:e2e:api": "npm run test:e2e --workspace=@candle/api",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/shared"
+  ]
+}

@@ -1,0 +1,1457 @@
+// Prisma schema — the SINGLE source of truth for the database (blueprint §12).
+// Migrations are generated, reviewed, and applied in order.
+// NEVER edit the database by hand in any environment.
+//
+// Phase 0 models: the minimum the skeleton needs (users/auth plumbing).
+// Every model: id (UUID), createdAt, updatedAt. Soft delete via deletedAt
+// where it applies.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// --- Auth / users plumbing -------------------------------------------------
+
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique
+  passwordHash    String
+  displayName     String?
+  avatarKey       String?
+  roles           Role[]    @default([USER])
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  refreshTokens RefreshToken[]
+  emailTokens   EmailToken[]
+  quizAttempts  QuizAttempt[]
+  completions   LessonCompletion[]
+  progress      UserLessonProgress[]
+  xpLedger      XpLedger[]
+  stats         UserStats?
+  badges        UserBadge[]
+  auditLogs     AuditLog[]           @relation("AuditActor")
+  simPortfolio  SimPortfolio?
+
+  assessmentAttempts AssessmentAttempt[]
+  assessmentResults  AssessmentResult[]
+  knowledgeProfile   UserKnowledgeProfile?
+  placementWaivers   PlacementWaiver[]
+
+  countryCode          String?
+  countryCodeChangedAt DateTime?
+  ratings              UserRating[]
+  ratingHistory        RatingHistory[]
+  questionExposures    UserQuestionExposure[]
+  duelsAsPlayerA       Duel[]             @relation("DuelPlayerA")
+  duelsAsPlayerB       Duel[]             @relation("DuelPlayerB")
+  duelAnswers          DuelAnswer[]
+  duelResults          DuelGameResult[]
+  challengesCreated    Challenge[]        @relation("ChallengeCreator")
+  challengesReceived   Challenge[]        @relation("ChallengeInvitee")
+  sprintTrades         SprintTrade[]
+  sprintResults        SprintDuelResult[]
+  weeklyMemberships    WeeklyLeagueMembership[]
+  weeklyTrades         WeeklyTrade[]
+  weeklyResults        WeeklyResult[]
+
+  @@index([email])
+  @@map("users")
+}
+
+/// Refresh-token families for rotation (blueprint §11).
+/// Phase 0: schema only. Issuance/rotation logic arrives in Phase 1.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId  String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum QuestionKind {
+  SINGLE
+  MULTI
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum EmailTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+enum SimOrderSide {
+  BUY
+  SELL
+}
+
+enum AssessmentAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  ABANDONED
+}
+
+enum AnswerConfidence {
+  CONFIDENT
+  GUESSING
+  SKIPPED
+}
+
+enum PlacementKind {
+  START_HERE
+  FAST_TRACK
+}
+
+enum PlacementChoice {
+  RECOMMENDED
+  FROM_BEGINNING
+}
+
+enum RatingKind {
+  LEARNING
+  TRADING
+}
+
+enum RatingEventSource {
+  DUEL
+  TRADING_WEEK
+  SEASON_RESET
+  DECAY
+}
+
+enum DuelBankSkill {
+  RECALL
+  CALCULATION
+  JUDGEMENT
+  CHART_READING
+  SCENARIO
+  RISK_ASSESSMENT
+}
+
+enum DuelBankQuestionType {
+  MCQ_4
+  TRUE_FALSE
+  CASE_CHOICE
+  CHART_CHOICE
+  NUMERIC
+  ORDERING
+}
+
+enum DuelBankStatus {
+  DRAFT
+  REVIEW
+  PILOT
+  LIVE
+  RETIRED
+}
+
+enum DuelType {
+  BOT
+  DAILY
+  /// Live Speed Quiz Duel (L1, docs/05 §3, docs/09 Phase 5).
+  LIVE
+  /// Myth vs Fact Blitz (L2, docs/05 §1, docs/08 §3.2, Phase 6):
+  /// 10 rapid TRUE_FALSE questions, 10 s each, same live engine.
+  BLITZ
+  /// Case Duel (L3, docs/05 §1, docs/08 §3.3, Phase 7):
+  /// 5 CASE_CHOICE cases, 45 s each, rubric scoring, same live engine.
+  CASE
+  /// Chart Detective (L4, docs/05 §1, docs/08 §3.4, Phase 8):
+  /// 5 CHART_CHOICE charts, 30 s each, same live engine, standard
+  /// MCQ_4 scoring (100 base + up to 50 speed bonus, no partial credit).
+  CHART
+  /// Paper Trading Sprint (T1, docs/05 §1, docs/08 §3.7, Phase 9):
+  /// 15-minute live trading duel on the Phase 2 price engine, same
+  /// fictional market + starting cash for both players, winner by
+  /// risk-adjusted return (docs/14). Its own engine (trading-sprint
+  /// module) — NOT the question-based live engine.
+  SPRINT
+  /// Crisis Duel (T2, docs/05 §1, docs/08 §3.7, Phase 10):
+  /// a Paper Trading Sprint with a seeded crash mid-duel (docs/15).
+  /// Same 15-minute timer, same market, same starting cash — the
+  /// crash factor multiplies the Phase 2 prices from the seeded
+  /// crash minute (7–10) for 3 minutes (−12%), then a partial
+  /// recovery (+5% over 5 minutes). Winner by crisis risk-adjusted
+  /// return. Same engine as SPRINT (variant on the Redis state),
+  /// own queue (`crisis:*`) and namespace (`/crisis`).
+  CRISIS
+}
+
+enum DuelStatus {
+  IN_PROGRESS
+  WAITING_OPPONENT
+  SETTLED
+}
+
+/// Friend Challenge invite status (Phase 12, docs/17, ADR 0014 §5).
+/// ACCEPTED is TRANSIENT, never terminal: it is written only when an
+/// accept claims the challenge, and the same request moves it to
+/// PLAYED (duel created) or reverts it to PENDING (duel creation
+/// failed). A challenge found in ACCEPTED with no duelId and an
+/// updatedAt older than 5 minutes is reverted to PENDING on read
+/// (lazy recovery) — no challenge is ever stuck in ACCEPTED.
+enum ChallengeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  PLAYED
+}
+
+enum DuelOutcome {
+  WIN
+  DRAW
+  LOSS
+}
+
+// --- Auth: single-use tokens (verification + password reset) -----------------
+
+/// Single-use, hashed, expiring tokens. The raw token is never stored —
+/// only its SHA-256 hash (blueprint §11).
+model EmailToken {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      EmailTokenType
+  tokenHash String         @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+
+  @@index([userId])
+  @@map("email_tokens")
+}
+
+// --- Learning: tracks, modules, versioned lessons -----------------------------
+
+model Track {
+  id          String        @id @default(uuid()) @db.Uuid
+  slug        String        @unique
+  title       String
+  description String        @db.Text
+  order       Int           @default(0)
+  status      ContentStatus @default(DRAFT)
+  createdById String?       @db.Uuid
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  modules LearningModule[]
+
+  assessmentVersions AssessmentVersion[]
+  placementWaivers   PlacementWaiver[]
+
+  @@map("tracks")
+}
+
+model LearningModule {
+  id          String        @id @default(uuid()) @db.Uuid
+  trackId     String        @db.Uuid
+  track       Track         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  title       String
+  description String?       @db.Text
+  order       Int           @default(0)
+  status      ContentStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  lessons Lesson[]
+
+  @@index([trackId])
+  @@map("modules")
+}
+
+/// A lesson is the stable family (module + order). Content lives in versions.
+model Lesson {
+  id        String         @id @default(uuid()) @db.Uuid
+  moduleId  String         @db.Uuid
+  module    LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title     String
+  order     Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  versions    LessonVersion[]
+  completions LessonCompletion[]
+  progress    UserLessonProgress[]
+
+  @@index([moduleId])
+  @@map("lessons")
+}
+
+/// Content versions. Published versions are IMMUTABLE — edits create a new
+/// DRAFT version copied from the latest published one (ADR 0002/4).
+/// Completions pin lessonVersionId.
+model LessonVersion {
+  id              String        @id @default(uuid()) @db.Uuid
+  lessonId        String        @db.Uuid
+  lesson          Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  version         Int
+  title           String
+  contentMarkdown String        @db.Text
+  status          ContentStatus @default(DRAFT)
+  publishedAt     DateTime?
+  createdById     String?       @db.Uuid
+  createdAt       DateTime      @default(now())
+
+  questions   Question[]
+  attempts    QuizAttempt[]
+  completions LessonCompletion[]
+
+  @@unique([lessonId, version])
+  @@index([lessonId, status])
+  @@map("lesson_versions")
+}
+
+// --- Quiz ---------------------------------------------------------------------
+
+model Question {
+  id              String        @id @default(uuid()) @db.Uuid
+  lessonVersionId String        @db.Uuid
+  lessonVersion   LessonVersion @relation(fields: [lessonVersionId], references: [id], onDelete: Cascade)
+  text            String        @db.Text
+  explanation     String        @db.Text
+  kind            QuestionKind  @default(SINGLE)
+  order           Int           @default(0)
+  points          Int           @default(10)
+
+  options QuestionOption[]
+  answers AttemptAnswer[]
+
+  @@index([lessonVersionId])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @db.Uuid
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+  order      Int      @default(0)
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+model QuizAttempt {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonVersionId String        @db.Uuid
+  lessonVersion   LessonVersion @relation(fields: [lessonVersionId], references: [id], onDelete: Cascade)
+  /// Snapshot of question ids in the order presented (shuffled per attempt).
+  questionIds     Json
+  startedAt       DateTime      @default(now())
+  submittedAt     DateTime?
+  score           Int?
+  totalPoints     Int?
+  passed          Boolean?
+  /// Idempotency key for the submit call (ADR 0002/7).
+  idempotencyKey  String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  answers AttemptAnswer[]
+
+  @@index([userId])
+  @@index([lessonVersionId])
+  @@map("quiz_attempts")
+}
+
+model AttemptAnswer {
+  id                String      @id @default(uuid()) @db.Uuid
+  attemptId         String      @db.Uuid
+  attempt           QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId        String      @db.Uuid
+  question          Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionIds Json
+  isCorrect         Boolean
+  pointsAwarded     Int         @default(0)
+
+  @@index([attemptId])
+  @@map("attempt_answers")
+}
+
+// --- Completions, progress, gamification ---------------------------------------
+
+model LessonCompletion {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId        String        @db.Uuid
+  lesson          Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonVersionId String        @db.Uuid
+  lessonVersion   LessonVersion @relation(fields: [lessonVersionId], references: [id])
+  quizAttemptId   String?       @db.Uuid
+  /// Idempotency key from the request header (ADR 0002/7).
+  idempotencyKey  String        @unique
+  completedAt     DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("lesson_completions")
+}
+
+model UserLessonProgress {
+  userId    String         @db.Uuid
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String         @db.Uuid
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status    ProgressStatus @default(NOT_STARTED)
+  updatedAt DateTime       @updatedAt
+
+  @@id([userId, lessonId])
+  @@map("user_lesson_progress")
+}
+
+/// Append-only XP ledger. idempotencyKey is UNIQUE — XP can never
+/// double-count, even if an event is processed twice (ADR 0002/2).
+model XpLedger {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount         Int
+  reason         String
+  idempotencyKey String   @unique
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@map("xp_ledger")
+}
+
+model UserStats {
+  userId           String  @id @db.Uuid
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalXp          Int     @default(0)
+  level            Int     @default(1)
+  currentStreak    Int     @default(0)
+  longestStreak    Int     @default(0)
+  /// Calendar date in Asia/Kolkata (YYYY-MM-DD) of the last counted activity.
+  lastActivityDate String?
+
+  @@map("user_stats")
+}
+
+model Badge {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+
+  awards UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String   @db.Uuid
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt DateTime @default(now())
+
+  @@id([userId, badgeId])
+  @@map("user_badges")
+}
+
+// --- Admin audit log (append-only) ----------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String   @db.Uuid
+  actor      User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@map("audit_log")
+}
+
+// --- Outbox (blueprint §3, ADR 0002/3) -------------------------------------------
+
+model OutboxEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  attempts    Int       @default(0)
+
+  @@index([processedAt, createdAt])
+  @@map("outbox_events")
+}
+
+// --- Idempotency (blueprint §6, ADR 0002/7) ---------------------------------------
+
+model IdempotencyRecord {
+  key       String
+  userId    String   @db.Uuid
+  response  Json
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@id([key, userId])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
+
+// --- Simulator (blueprint §17, ADR 0003) ----------------------------------------
+// Risk-free trading simulator. ALL money is virtual (SIMULATOR_STARTING_CASH);
+// ALL tickers are fictional (blueprint §16). Money-like effects run in a
+// single transaction and require an Idempotency-Key (blueprint §6).
+
+/// Fictional tradeable instrument. Seeded; never a real ticker (ADR 0003/2).
+model SimInstrument {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// Fictional ticker symbol, e.g. "NVLT". Unique, uppercase letters only.
+  symbol      String   @unique
+  name        String
+  description String
+  /// Anchor price for the deterministic price engine (ADR 0003/3).
+  basePrice   Decimal  @db.Decimal(18, 2)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  holdings SimHolding[]
+  orders   SimOrder[]
+  sprintTrades SprintTrade[]
+  weeklyTrades WeeklyTrade[]
+
+  @@map("sim_instruments")
+}
+
+/// One virtual-money portfolio per user. Created lazily on first access.
+model SimPortfolio {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Virtual cash balance. Never negative (enforced by the service).
+  cash      Decimal  @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  holdings SimHolding[]
+  orders   SimOrder[]
+
+  @@map("sim_portfolios")
+}
+
+/// A user's position in one instrument. One row per (portfolio, instrument).
+model SimHolding {
+  portfolioId  String        @db.Uuid
+  portfolio    SimPortfolio  @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  instrumentId String        @db.Uuid
+  instrument   SimInstrument @relation(fields: [instrumentId], references: [id])
+  /// Units held. Never negative (enforced by the service).
+  quantity     Decimal       @db.Decimal(18, 6)
+  /// Weighted-average buy price, for unrealized P&L display.
+  avgCost      Decimal       @db.Decimal(18, 2)
+  updatedAt    DateTime      @updatedAt
+
+  @@id([portfolioId, instrumentId])
+  @@map("sim_holdings")
+}
+
+/// Executed simulator order. v1 fills immediately at the simulated price;
+/// rejections are domain errors, not rows (ADR 0003/4).
+model SimOrder {
+  id             String        @id @default(uuid()) @db.Uuid
+  portfolioId    String        @db.Uuid
+  portfolio      SimPortfolio  @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  instrumentId   String        @db.Uuid
+  instrument     SimInstrument @relation(fields: [instrumentId], references: [id])
+  side           SimOrderSide
+  quantity       Decimal       @db.Decimal(18, 6)
+  /// Simulated execution price per unit (ADR 0003/3).
+  price          Decimal       @db.Decimal(18, 2)
+  /// quantity * price at execution.
+  totalValue     Decimal       @db.Decimal(18, 2)
+  /// Belt-and-braces with IdempotencyRecord: one order per key (ADR 0002/7).
+  idempotencyKey String        @unique
+  createdAt      DateTime      @default(now())
+
+  @@index([portfolioId, createdAt])
+  @@map("sim_orders")
+}
+
+// --- Onboarding assessment (docs/03-onboarding-assessment-design.md) --------------
+// Diagnostic knowledge check shown once after registration. The bank is
+// versioned and seeded (never hand-edited); published versions are
+// immutable. Answers/explanations NEVER leave the server (anti-gaming).
+
+/// One bank version per track. v1 targets the 'foundations' track.
+model AssessmentVersion {
+  id          String        @id @default(uuid()) @db.Uuid
+  version     Int
+  trackId     String        @db.Uuid
+  track       Track         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  questions AssessmentQuestion[]
+  attempts  AssessmentAttempt[]
+  profiles  UserKnowledgeProfile[]
+
+  @@unique([trackId, version])
+  @@map("assessment_versions")
+}
+
+model AssessmentQuestion {
+  id          String             @id @default(uuid()) @db.Uuid
+  versionId   String             @db.Uuid
+  version     AssessmentVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  /// Topic key, e.g. "money-basics". Registry per version, not an enum.
+  topicKey    String
+  /// 1 = recall, 2 = applied, 3 = judgment.
+  difficulty  Int
+  text        String             @db.Text
+  /// Admin-only. NEVER served to clients.
+  explanation String             @db.Text
+  kind        QuestionKind       @default(SINGLE)
+  order       Int                @default(0)
+  createdAt   DateTime           @default(now())
+
+  options AssessmentOption[]
+  answers AssessmentAnswer[]
+
+  @@index([versionId])
+  @@map("assessment_questions")
+}
+
+model AssessmentOption {
+  id         String             @id @default(uuid()) @db.Uuid
+  questionId String             @db.Uuid
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean            @default(false)
+  order      Int                @default(0)
+
+  @@index([questionId])
+  @@map("assessment_options")
+}
+
+model AssessmentAttempt {
+  id             String                  @id @default(uuid()) @db.Uuid
+  userId         String                  @db.Uuid
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versionId      String                  @db.Uuid
+  version        AssessmentVersion       @relation(fields: [versionId], references: [id])
+  /// Snapshot of question ids in presented (shuffled) order.
+  questionIds    Json
+  status         AssessmentAttemptStatus @default(IN_PROGRESS)
+  startedAt      DateTime                @default(now())
+  submittedAt    DateTime?
+  /// Idempotency key for the submit call (ADR 0002/7 pattern).
+  idempotencyKey String?                 @unique
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  answers AssessmentAnswer[]
+  result  AssessmentResult?
+
+  @@index([userId])
+  @@index([versionId])
+  @@map("assessment_attempts")
+}
+
+model AssessmentAnswer {
+  id                String             @id @default(uuid()) @db.Uuid
+  attemptId         String             @db.Uuid
+  attempt           AssessmentAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId        String             @db.Uuid
+  question          AssessmentQuestion @relation(fields: [questionId], references: [id])
+  selectedOptionIds Json
+  confidence        AnswerConfidence
+  isCorrect         Boolean
+  /// 0, 0.5, or 1.0 (spec §4.1).
+  pointsAwarded     Float              @default(0)
+
+  @@index([attemptId])
+  @@map("assessment_answers")
+}
+
+model AssessmentResult {
+  id             String         @id @default(uuid()) @db.Uuid
+  attemptId      String         @unique @db.Uuid
+  attempt        AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  userId         String         @db.Uuid
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// { topicKey: { level, score, maxScore } } — see spec §5.4.
+  topicLevels    Json
+  overallLevel   Int
+  placementKind  PlacementKind
+  /// Module order recommended, per spec §4.3.
+  recommendedStartModuleOrder Int
+  placementChoice PlacementChoice?
+  placedAt       DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@index([userId])
+  @@map("assessment_results")
+}
+
+/// Durable knowledge profile — THE contract the future adaptive engine
+/// consumes. 1:1 with user; rewritten on each official attempt.
+model UserKnowledgeProfile {
+  userId       String            @id @db.Uuid
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versionId    String            @db.Uuid
+  version      AssessmentVersion @relation(fields: [versionId], references: [id])
+  attemptId    String            @db.Uuid
+  topicLevels  Json
+  overallLevel Int
+  computedAt   DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@map("user_knowledge_profiles")
+}
+
+/// Granted starting position. One per user+track; single-use.
+model PlacementWaiver {
+  userId                String   @db.Uuid
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId               String   @db.Uuid
+  track                 Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  /// Modules with order < this value are treated as unlocked.
+  waivedUpToModuleOrder Int
+  createdAt             DateTime @default(now())
+
+  @@id([userId, trackId])
+  @@map("placement_waivers")
+}
+
+// --- Ratings (docs/04-ratings-and-deployment.md, ADR 0005) ------------------------
+// Separate Learning and Trading ratings per user. Ratings are stored with
+// 1 decimal place internally and displayed rounded (docs/04 §2). The
+// headline Candle Rating is derived (0.5 x Learning + 0.5 x Trading) and
+// is never stored. countryCode is denormalised here for leaderboard
+// rebuilds; the User row stays the authority (ADR 0005/8).
+
+/// One rating row per (user, kind). Created lazily on first rated event.
+model UserRating {
+  userId      String     @db.Uuid
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        RatingKind
+  /// Current rating, 1 decimal place. Starts at 1000, floor 100.
+  rating      Float      @default(1000)
+  gamesPlayed Int        @default(0)
+  wins        Int        @default(0)
+  draws       Int        @default(0)
+  losses      Int        @default(0)
+  /// True until 10 rated events in this kind have been recorded.
+  provisional Boolean    @default(true)
+  lastRatedAt DateTime?
+  /// Quarter the rating belongs to, e.g. "2026-Q4".
+  season      String
+  /// Denormalised from User.countryCode at write time (ADR 0005/8).
+  countryCode String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@id([userId, kind])
+  @@index([kind, rating])
+  @@map("user_ratings")
+}
+
+/// Audit trail: one row per rated event. Any rating is replayable from
+/// history (docs/04 §8). eventId is the idempotency key, unique per user.
+model RatingHistory {
+  id             String            @id @default(uuid()) @db.Uuid
+  userId         String            @db.Uuid
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind           RatingKind
+  source         RatingEventSource
+  /// Idempotency key for the event (duel key, trading-week key, or a
+  /// derived key for season resets / decay). Unique per user.
+  eventId        String
+  /// The other side of a duel; null for trading weeks, resets, decay.
+  opponentId     String?           @db.Uuid
+  /// Opponent rating at event time (1200 for the simulated index).
+  opponentRating Float?
+  expectedScore  Float
+  actualScore    Float
+  kFactor        Int
+  /// Signed change, 1 decimal place. Points gained = points lost.
+  delta          Float
+  ratingBefore   Float
+  ratingAfter    Float
+  season         String
+  /// Monday of the week (UTC), for trading weeks and decay only.
+  weekStart      DateTime?
+  createdAt      DateTime          @default(now())
+
+  @@unique([userId, eventId])
+  @@index([userId, kind, createdAt])
+  @@index([userId, createdAt])
+  @@map("rating_history")
+}
+
+// --- Question Bank (docs/05-duels-system-design.md §2, ADR 0005 §15) ----------
+// Step 1 of the duels build order: the bank, its CMS workflow, pilot +
+// calibration, template variants, and the stratified selection engine.
+// No duel tables yet (duels, answers, matchmaking arrive in later steps).
+// ALL content is original, educational, and fictional where it names
+// companies or tickers (blueprint §16). Published versions are IMMUTABLE:
+// editing a LIVE item creates a new row (version + 1, status DRAFT).
+
+/// One bank item = one question family version. `key` is the stable seed
+/// key (e.g. "qb-001"); a new version of the same question gets a new row
+/// with key "<key>-v<version>". Topic is a String validated against the
+/// DUEL_BANK_TOPICS allowlist constant, not a closed enum, so topics can
+/// grow without a migration.
+model DuelBankItem {
+  id             String              @id @default(uuid()) @db.Uuid
+  key            String              @unique
+  topic          String
+  skill          DuelBankSkill
+  type           DuelBankQuestionType
+  difficulty     Int
+  language       String              @default("en")
+  sourceLessonId String?             @db.Uuid
+  stem           String              @db.Text
+  explanation    String              @db.Text
+  /// CASE_CHOICE only: structured case numbers as labelled key/value
+  /// pairs (e.g. {"Monthly income": "₹45,000", ...}). The renderer
+  /// shows them as a small table; numbers are never buried only in prose.
+  context        Json?
+  /// CASE_CHOICE only (required there): why the best action wins and
+  /// why each other action is weaker, shown line by line on reveal.
+  rubric         String?             @db.Text
+  /// CHART_CHOICE only (required there): structured chart data —
+  /// { title, instrument, template, xLabel, yLabel, xLabels[6],
+  /// series[6], annotation }. The renderer draws the chart from this
+  /// data (never an image); the public view carries it WITHOUT the
+  /// annotation, which is reveal-only (docs/08 §3.4).
+  chart          Json?
+  status         DuelBankStatus      @default(DRAFT)
+  version        Int                 @default(1)
+  templateId     String?             @db.Uuid
+  template       DuelBankTemplate?   @relation(fields: [templateId], references: [id])
+  parameters     Json?
+  authorId       String?             @db.Uuid
+  reviewerId     String?             @db.Uuid
+  publishedAt    DateTime?
+  pilotAnswers   Int                 @default(0)
+  pilotCorrect   Int                 @default(0)
+  correctRate    Float?
+  /// Full IRT discrimination needs real duel data (per-rating-band
+  /// correct rates); it stays null until then (ADR 0005 §15). Never faked.
+  discrimination Float?
+  exposureCount  Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  options   DuelBankOption[]
+  exposures UserQuestionExposure[]
+  duelAnswers DuelAnswer[]
+
+  @@index([status, topic, difficulty])
+  @@index([status, type, difficulty])
+  @@index([status, skill])
+  @@index([templateId])
+  @@map("duel_bank_items")
+}
+
+model DuelBankOption {
+  id        String       @id @default(uuid()) @db.Uuid
+  itemId    String       @db.Uuid
+  item      DuelBankItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  text      String
+  isCorrect Boolean      @default(false)
+  /// CASE_CHOICE only: per-option score fraction — best action 100,
+  /// second-best 50, harmful/other 0. For other types this stays 0
+  /// (their scoring is base + speed bonus, not per-option points).
+  points    Int          @default(0)
+  /// CASE_CHOICE only: the one-line consequence shown under the action card.
+  consequence String?
+  order     Int          @default(0)
+
+  @@index([itemId])
+  @@map("duel_bank_options")
+}
+
+/// A parameterised question family. Variants generated from a template
+/// are DRAFT items linked by templateId + parameters; they go through
+/// the same two-person review as hand-written items.
+model DuelBankTemplate {
+  id              String         @id @default(uuid()) @db.Uuid
+  key             String         @unique
+  topic           String
+  skill           DuelBankSkill
+  templateText    String         @db.Text
+  parameterSchema Json
+  answerFormula   String?
+  distractorRules Json?
+  status          DuelBankStatus @default(DRAFT)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  items DuelBankItem[]
+
+  @@map("duel_bank_templates")
+}
+
+/// Exposure control (docs/05 §2.3): an item may be shown to the same
+/// user at most once in 30 days and at most 3 times in total. The
+/// selector enforces this; the UI never has to.
+model UserQuestionExposure {
+  userId     String       @db.Uuid
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankItemId String       @db.Uuid
+  item       DuelBankItem @relation(fields: [bankItemId], references: [id], onDelete: Cascade)
+  lastSeenAt DateTime
+  seenCount  Int          @default(1)
+
+  @@id([userId, bankItemId])
+  @@index([userId, lastSeenAt])
+  @@map("user_question_exposures")
+}
+
+// --- Duels Step 2 (docs/05-duels-system-design.md §1/§7, ADR 0006) ------------
+// Bot Duel (P1, unrated practice vs Mira) + Async Daily Duel (L5, rated,
+// 1 per user per Asia/Kolkata calendar day). No live gateway, no
+// matchmaking — those arrive in Step 3. Answers/explanations NEVER leave
+// the server before reveal; post-game stats are stored at duel end
+// (DuelGameResult), never recomputed on page view.
+
+/// One player's attempt at a duel. A Daily Duel pair is TWO rows (one per
+/// player) linked by pairedDuelId once both have finished; a Bot Duel is
+/// one row (playerB is null, the bot's score lives in botScore/botCorrect).
+model Duel {
+  id        String     @id @default(uuid()) @db.Uuid
+  type      DuelType
+  status    DuelStatus @default(IN_PROGRESS)
+  playerAId String     @db.Uuid
+  playerA   User       @relation("DuelPlayerA", fields: [playerAId], references: [id], onDelete: Cascade)
+  playerBId String?    @db.Uuid
+  playerB   User?      @relation("DuelPlayerB", fields: [playerBId], references: [id], onDelete: Cascade)
+  /// The other player's Duel row in a Daily pair (set at settlement).
+  pairedDuelId String? @db.Uuid
+  /// Asia/Kolkata calendar date (YYYY-MM-DD) for DAILY duels; null for BOT.
+  dailyDate String?
+  dailySetId String?   @db.Uuid
+  dailySet  DuelDailySet? @relation(fields: [dailySetId], references: [id])
+  /// Bank item ids in the order presented (same set, same order, both sides).
+  questionIds Json
+  /// Seed for the bot simulation (BOT) / the daily-set seed (DAILY).
+  /// The same seed replays the same bot result (ADR 0006/5).
+  seed      String
+  startedAt DateTime   @default(now())
+  finishedAt DateTime?
+  /// Winner's user id; null for a draw, or (BOT) when Mira wins.
+  winnerId  String?    @db.Uuid
+  /// Mira's simulated result (BOT duels and bot-fallback Daily duels only).
+  botScore       Int?
+  botCorrect     Int?
+  botTotalTimeMs Int?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  answers DuelAnswer[]
+  results DuelGameResult[]
+  sprintTrades SprintTrade[]
+  sprintResults SprintDuelResult[]
+  /// Friend Challenges settled into this duel (at most one: a
+  /// challenge links to its duel once, at accept — docs/17 §5).
+  challenges Challenge[]
+
+  @@index([playerAId, type, createdAt])
+  @@index([type, dailyDate, status])
+  @@index([type, status, createdAt])
+  @@map("duels")
+}
+
+/// A Friend Challenge invite (Phase 12, docs/17, ADR 0014) — an
+/// invite-only START-MODE for an existing 1v1 duel, not a separate
+/// engine and not the friends system (doc 06). The duel itself is a
+/// normal Duel row (type LIVE / BLITZ / CASE / CHART / SPRINT /
+/// CRISIS), created at accept via the existing live/trading engine,
+/// bypassing matchmaking; this row is only the invite + its lifecycle.
+/// RATED by default (ADR 0014 §3): no unrated toggle, no stakes, no
+/// real money — accepting with both Ratings shown is the opt-in.
+/// Expiry: 24 hours from creation (CHALLENGE_EXPIRY_MS). One pending
+/// challenge per pair per duel type at a time — enforced in the
+/// service AND by the partial unique index in migration 0014
+/// (LEAST/GREATEST over the pair, status PENDING or ACCEPTED).
+model Challenge {
+  id        String          @id @default(uuid()) @db.Uuid
+  creatorId String          @db.Uuid
+  creator   User            @relation("ChallengeCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  inviteeId String          @db.Uuid
+  invitee   User            @relation("ChallengeInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+  /// The duel type the challenge starts (LIVE / BLITZ / CASE / CHART /
+  /// SPRINT / CRISIS only — never DAILY or WEEKLY, which are seasons,
+  /// never BOT, which is practice). The Duel row carries the same type.
+  duelType  DuelType
+  status    ChallengeStatus @default(PENDING)
+  /// Unguessable invite token (16 hex chars). The invite link is
+  /// `/duels/challenge?code={inviteCode}` — the code proves possession
+  /// of the link; accepting still requires being the invitee (docs/17 §6).
+  inviteCode String         @unique
+  /// The Duel row created at accept; null until the challenge is PLAYED.
+  duelId    String?         @db.Uuid
+  duel      Duel?           @relation(fields: [duelId], references: [id])
+  /// Invite expiry (createdAt + 24 h). Past it, the challenge is
+  /// EXPIRED and can no longer be accepted (lazy expiry on read).
+  expiresAt DateTime
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([creatorId, status, createdAt])
+  @@index([inviteeId, status, createdAt])
+  @@index([duelId])
+  @@map("challenges")
+}
+
+/// One graded answer inside a duel. Correctness and points are computed
+/// server-side at answer time and never sent to the client before reveal.
+model DuelAnswer {
+  id         String       @id @default(uuid()) @db.Uuid
+  duelId     String       @db.Uuid
+  duel       Duel         @relation(fields: [duelId], references: [id], onDelete: Cascade)
+  userId     String       @db.Uuid
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String       @db.Uuid
+  question   DuelBankItem @relation(fields: [questionId], references: [id])
+  /// The selected option id; null when the question was skipped.
+  optionId   String?      @db.Uuid
+  skipped    Boolean      @default(false)
+  correct    Boolean      @default(false)
+  /// Client-reported time for this question, ms (0–15000). Null when skipped.
+  timeMs     Int?
+  /// 100 base per correct answer + up to 50 speed bonus (docs/07 §5).
+  points     Int          @default(0)
+  /// Case Duel (L3, Phase 7) only: the player's one-line reason for the
+  /// action they picked (a reason chip, or null when skipped/missing).
+  /// Never scored — recorded with the answer only (ADR 0009 §4).
+  reason     String?
+  /// Position in the duel's question order (0-based).
+  order      Int
+  createdAt  DateTime     @default(now())
+
+  @@unique([duelId, userId, questionId])
+  @@index([duelId, userId])
+  @@map("duel_answers")
+}
+
+/// The day's fixed Daily Duel set: generated once per Asia/Kolkata date
+/// (deterministic seed from the date string), so every player that day
+/// gets the same 5 questions in the same order (ADR 0006/6).
+model DuelDailySet {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// Asia/Kolkata calendar date (YYYY-MM-DD). Unique: one set per day.
+  date        String   @unique
+  questionIds Json
+  seed        String
+  createdAt   DateTime @default(now())
+
+  duels Duel[]
+
+  @@map("duel_daily_sets")
+}
+
+/// Post-game stats, stored at duel end in the same transaction as the
+/// Rating update and XP grant (docs/07 §4). One row per (duel, player);
+/// the result page reads this row, it never recomputes stats.
+model DuelGameResult {
+  id         String      @id @default(uuid()) @db.Uuid
+  duelId     String      @db.Uuid
+  duel       Duel        @relation(fields: [duelId], references: [id], onDelete: Cascade)
+  userId     String      @db.Uuid
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  result     DuelOutcome
+  score      Int
+  correct    Int
+  wrong      Int
+  skipped    Int
+  /// correct / (correct + wrong + skipped), 0–1.
+  accuracy   Float
+  avgTimeMs  Int?
+  fastestTimeMs Int?
+  slowestTimeMs Int?
+  /// Longest run of consecutive correct answers in this duel.
+  bestStreak Int
+  /// [{ topic, correct, total, accuracy }] — worst accuracy first.
+  perTopic   Json
+  /// [{ questionId, stem, topic, skill, difficulty, selectedOptionId,
+  ///    selectedOptionText, correctOptionId, correctOptionText, correct,
+  ///    skipped, timeMs, points, explanation }] — in duel order.
+  perQuestion Json
+  /// Learning Rating before/after/delta (DAILY only; null for BOT).
+  ratingBefore Float?
+  ratingAfter  Float?
+  ratingDelta  Float?
+  /// Plain-words reason, e.g. "You won against a player rated 1150…"
+  /// (BOT: "no Rating change — practice").
+  ratingReason String
+  xpAwarded  Int
+  /// { result, xp, reason } — which existing XP value applied and why.
+  xpBreakdown Json
+  createdAt  DateTime    @default(now())
+
+  @@unique([duelId, userId])
+  @@index([userId, createdAt])
+  @@map("duel_game_results")
+}
+
+// --- Paper Trading Sprint (docs/05 §1 T1, docs/08 §3.7, ADR 0011) --------
+// Live trading duel (T1, rated, Trading Rating) on the Phase 2
+// deterministic price engine. Trading duels use ACTIONS (BUY/SELL),
+// not question formats (doc 08 §3.7) — so they have their own engine
+// (trading-sprint module) and their own result/trade tables. The Duel
+// row itself is reused (type SPRINT, questionIds = [], seed = market
+// seed); the bot's summary lives on the Duel row (botScore =
+// risk-adjusted score × 1000, botCorrect = bot trade count), the same
+// convention as the learning bot duels.
+
+/// One executed sprint order. The audit trail for a sprint: any result
+/// can be replayed from these rows + the deterministic price engine
+/// (docs/05 §5). Bot trades are NOT rows here — the bot has no user
+/// account; her trades are reproducible from the duel seed + the
+/// documented bot strategy (docs/14 §5) and her summary lives on the
+/// human's SprintDuelResult (opponent fields) + the Duel row.
+model SprintTrade {
+  id        String       @id @default(uuid()) @db.Uuid
+  duelId    String       @db.Uuid
+  duel      Duel         @relation(fields: [duelId], references: [id], onDelete: Cascade)
+  userId    String       @db.Uuid
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instrumentId String    @db.Uuid
+  instrument SimInstrument @relation(fields: [instrumentId], references: [id])
+  side      SimOrderSide
+  /// Whole units only (SPRINT_MIN_ORDER_QTY = 1).
+  quantity  Decimal      @db.Decimal(18, 6)
+  /// Simulated execution price per unit at the order's minute.
+  price     Decimal      @db.Decimal(18, 2)
+  /// quantity * price at execution.
+  totalValue Decimal     @db.Decimal(18, 2)
+  /// Client-supplied idempotency id (socket payload): one order per
+  /// (duel, user, clientOrderId) — a retried order never double-applies.
+  clientOrderId String
+  executedAt DateTime    @default(now())
+
+  @@unique([duelId, userId, clientOrderId])
+  @@index([duelId, userId])
+  @@map("sprint_trades")
+}
+
+/// Post-sprint stats, stored at settlement in the same transaction as
+/// the Trading Rating update and XP grant (docs/14 §7). One row per
+/// (duel, human player); the result screen reads this row, it never
+/// recomputes stats. The opponent's summary (risk score, final equity,
+/// trade count) is denormalised here so the result screen needs no
+/// second lookup — for a bot duel the opponent is Mira.
+model SprintDuelResult {
+  id         String      @id @default(uuid()) @db.Uuid
+  duelId     String      @db.Uuid
+  duel       Duel        @relation(fields: [duelId], references: [id], onDelete: Cascade)
+  userId     String      @db.Uuid
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  result     DuelOutcome
+  /// Final portfolio value (cash + holdings at the settlement price).
+  finalEquity Decimal    @db.Decimal(18, 2)
+  /// (finalEquity − startCash) / startCash × 100.
+  returnPct  Float
+  /// Sprint-horizon realised volatility (docs/14 §3): stdev of the
+  /// per-minute simple returns × sqrt(number of returns), in %.
+  realisedVolPct Float
+  /// Largest peak-to-trough fall of the equity curve, in %.
+  maxDrawdownPct Float
+  /// The deciding number (docs/14 §3): gains divided by (1 + V + D),
+  /// losses multiplied by (1 + V + D), clamped to ±100. For a Crisis
+  /// Duel (docs/15 §5) the loss branch divides instead of multiplying
+  /// (the crash imposes a ~12% drawdown on every invested player, so
+  /// multiplying would saturate the ±100 clamp for all holders).
+  riskAdjustedScore Float
+  tradeCount Int
+  /// Crisis Duel only (docs/15 §8): the seeded crash minute (7–10),
+  /// this player's peak-to-trough fall across the crash window (%),
+  /// their trades executed during the crash window, and whether they
+  /// sold at least half of a holding during the crash window
+  /// (panic-sell flag — reported, not scored). Null for sprints.
+  crashMinute Int?
+  crashDrawdownPct Float?
+  tradesDuringCrash Int?
+  panicSold Boolean?
+  /// [{ instrumentId, symbol, trades, buyQty, sellQty, realisedPnl,
+  ///    finalQty, finalValue }] — in trade order.
+  perInstrument Json
+  /// [{ t (ms epoch), equity }] — the minute-sampled equity curve +
+  /// the final sample at settlement.
+  equityCurve Json
+  /// The opponent's risk-adjusted score (Mira's, for a bot duel).
+  opponentRiskScore Float
+  /// The opponent's final equity (null when the opponent forfeited
+  /// before any trade — then their equity is the starting cash).
+  opponentEquity Decimal? @db.Decimal(18, 2)
+  opponentTradeCount Int
+  /// Trading Rating before/after/delta (null when the Rating could
+  /// not be updated at settlement — ADR 0007 §8.2 carries over).
+  ratingBefore Float?
+  ratingAfter  Float?
+  ratingDelta  Float?
+  /// Plain-words reason, e.g. "You beat Ravi (rated 1000) on
+  /// risk-adjusted return. Your Trading Rating went up by 20."
+  ratingReason String
+  xpAwarded  Int
+  /// { result, xp, reason } — which existing XP value applied and why.
+  xpBreakdown Json
+  createdAt  DateTime    @default(now())
+
+  @@unique([duelId, userId])
+  @@index([userId, createdAt])
+  @@map("sprint_duel_results")
+}
+
+// --- Weekly Portfolio Battle (docs/05 §1 T3, docs/08 §3.7, ADR 0013) --------
+// A week-long ASYNC trading duel (T3, rated, Trading Rating) on the
+// Phase 2 deterministic price engine. Trading duels use ACTIONS
+// (BUY/SELL), not question formats (doc 08 §3.7) — and a weekly battle
+// is NOT a 1v1 Duel row: there is no DuelType.WEEKLY, no Duel row, no
+// WebSocket namespace. A season has leagues of 30; players trade by
+// REST all week; settlement is a manual ADMIN endpoint in v1 (no
+// scheduler exists — docs/16 §9 names the future cron). The season is
+// identified by its Monday date (YYYY-MM-DD, Asia/Kolkata, doc 04 §5).
+
+/// A weekly season's lifecycle. ENDED is derived, not stored: a season
+/// is ended when status is ACTIVE and now >= endsAt (trading stops,
+/// settlement opens). SETTLED means every league has stored results.
+enum WeeklySeasonStatus {
+  /// Created by ADMIN, join window open, leagues not yet formed.
+  OPEN
+  /// Started by ADMIN, leagues formed, trading open until endsAt.
+  ACTIVE
+  /// Settled by ADMIN, results stored, re-settle replays them.
+  SETTLED
+}
+
+/// One weekly season: Monday 00:00 IST to Sunday 23:59 IST in
+/// production (doc 04 §5). The trading window is [startedAt, endsAt),
+/// set when an admin starts the season: endsAt = startedAt +
+/// WEEKLY_SEASON_DURATION_MS (default 7 days; 15 s in tests, ADR 0013
+/// §6). scheduledStartsAt/EndsAt are the Monday-window plan; the real
+/// window is the started one, so a late manual start still trades a
+/// full week.
+model WeeklySeason {
+  id        String             @id @default(uuid()) @db.Uuid
+  /// Monday date (YYYY-MM-DD, Asia/Kolkata) identifying the season.
+  weekStart String             @unique
+  status    WeeklySeasonStatus @default(OPEN)
+  /// Monday 00:00 IST of weekStart (the plan).
+  scheduledStartsAt DateTime
+  /// scheduledStartsAt + 7 days (the plan).
+  scheduledEndsAt   DateTime
+  /// Set by the ADMIN start: the real trading window opens here.
+  startedAt DateTime?
+  /// startedAt + WEEKLY_SEASON_DURATION_MS.
+  endsAt    DateTime?
+  /// Equal-weighted mean return of the 6 fictional instruments from
+  /// startedAt to settlement, in % — the index the Trading Rating is
+  /// scored against (doc 04 §5). Null until settled.
+  indexReturnPct Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leagues     WeeklyLeague[]
+  memberships WeeklyLeagueMembership[]
+  trades      WeeklyTrade[]
+  results     WeeklyResult[]
+
+  @@index([status, createdAt])
+  @@map("weekly_seasons")
+}
+
+/// One league inside a season: 30 players (docs/05 §7 Step 9), seeded
+/// by Trading Rating at season start. tier is the league number
+/// (1 = top): top 3 are promoted one tier, bottom 3 demoted one tier
+/// at season end. A leftover single player merges into the previous
+/// league (max 31); a lone joiner in a tier is carried to the next
+/// season instead of playing alone (docs/16 §4, ADR 0013 §4).
+model WeeklyLeague {
+  id           String @id @default(uuid()) @db.Uuid
+  seasonId     String @db.Uuid
+  season       WeeklySeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  /// League tier (1 = top). Leagues are numbered per season, tier by tier.
+  tier         Int
+  /// 1-based league number inside the season (unique per season).
+  leagueNumber Int
+
+  createdAt DateTime @default(now())
+
+  memberships WeeklyLeagueMembership[]
+  trades      WeeklyTrade[]
+  results     WeeklyResult[]
+
+  @@unique([seasonId, leagueNumber])
+  @@index([seasonId, tier])
+  @@map("weekly_leagues")
+}
+
+/// One player's place in a season. leagueId is null until the ADMIN
+/// start forms leagues; carried is true when the player was the lone
+/// joiner of a tier and is carried into the next season's join pool
+/// (docs/16 §4). tradingRating is the player's Trading Rating at join
+/// time (the seeding number); tier is assigned at formation.
+model WeeklyLeagueMembership {
+  id            String @id @default(uuid()) @db.Uuid
+  seasonId      String @db.Uuid
+  season        WeeklySeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  leagueId      String? @db.Uuid
+  league        WeeklyLeague? @relation(fields: [leagueId], references: [id], onDelete: SetNull)
+  userId        String @db.Uuid
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Trading Rating at join time (league seeding).
+  tradingRating Float
+  /// Tier assigned at league formation (1 = top). 1 until formed.
+  tier          Int    @default(1)
+  /// True when carried to the next season (lone joiner, no league).
+  carried       Boolean @default(false)
+  joinedAt      DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([seasonId, userId])
+  @@index([seasonId, leagueId])
+  @@index([userId, createdAt])
+  @@map("weekly_league_memberships")
+}
+
+/// One executed weekly order. The audit trail for a season: any result
+/// can be replayed from these rows + the deterministic price engine
+/// (docs/05 §5). Unlike the sprint bot, these are REAL user trades —
+/// they are persisted, because the week-long equity curve is rebuilt
+/// from them at settlement (docs/16 §5). No XP per trade.
+model WeeklyTrade {
+  id        String       @id @default(uuid()) @db.Uuid
+  seasonId  String       @db.Uuid
+  season    WeeklySeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  leagueId  String       @db.Uuid
+  league    WeeklyLeague @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  userId    String       @db.Uuid
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instrumentId String    @db.Uuid
+  instrument SimInstrument @relation(fields: [instrumentId], references: [id])
+  side      SimOrderSide
+  /// Whole units only (WEEKLY_MIN_ORDER_QTY = 1).
+  quantity  Decimal      @db.Decimal(18, 6)
+  /// Simulated execution price per unit at the order's minute.
+  price     Decimal      @db.Decimal(18, 2)
+  /// quantity * price at execution.
+  totalValue Decimal     @db.Decimal(18, 2)
+  /// Client-supplied idempotency id: one order per
+  /// (season, user, clientOrderId) — a retried order never double-applies.
+  clientOrderId String
+  executedAt DateTime    @default(now())
+
+  @@unique([seasonId, userId, clientOrderId])
+  @@index([seasonId, userId])
+  @@index([leagueId, userId])
+  @@map("weekly_trades")
+}
+
+/// Post-season stats, stored at settlement in one transaction per
+/// league (docs/16 §9). One row per (season, player); the standings
+/// and result screens read this row, they never recompute stats.
+/// result is the LEAGUE outcome (top 3 = WIN, middle = DRAW, bottom 3
+/// = LOSS, never-traded = LOSS with 0 XP); the Trading Rating result
+/// (vs the index) is ratingResult, and the two can disagree — a league
+/// winner can lose Rating to the index (docs/16 §7, ADR 0013 §7).
+model WeeklyResult {
+  id         String      @id @default(uuid()) @db.Uuid
+  seasonId   String      @db.Uuid
+  season     WeeklySeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  leagueId   String      @db.Uuid
+  league     WeeklyLeague @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  userId     String      @db.Uuid
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 1-based rank inside the league (never-traded players rank last).
+  rank       Int
+  /// League size at settlement (for the top-3 / bottom-3 zones).
+  leagueSize Int
+  /// The tier this league was (1 = top).
+  tier       Int
+  /// The tier this player enters next season in (promotion/demotion).
+  nextTier   Int
+  /// League outcome: WIN (top 3) / DRAW (middle) / LOSS (bottom 3 or never-traded).
+  result     DuelOutcome
+  /// Final portfolio value (cash + holdings at the settlement price).
+  finalEquity Decimal    @db.Decimal(18, 2)
+  /// (finalEquity − startCash) / startCash × 100.
+  returnPct  Float
+  /// Week-horizon realised volatility (docs/14 §3): stdev of the
+  /// per-sample simple returns × sqrt(number of returns), in %.
+  realisedVolPct Float
+  /// Largest peak-to-trough fall of the equity curve, in %.
+  maxDrawdownPct Float
+  /// The deciding number (docs/14 §3): gains divided by (1 + V + D),
+  /// losses multiplied by (1 + V + D), clamped to ±100.
+  riskAdjustedScore Float
+  tradeCount Int
+  /// [{ instrumentId, symbol, trades, buyQty, sellQty, realisedPnl,
+  ///    finalQty, finalValue }] — in trade order.
+  perInstrument Json
+  /// [{ t (ms epoch), equity }] — start + one sample per trade +
+  /// the final sample at settlement (docs/16 §5).
+  equityCurve Json
+  /// Trading Rating before/after/delta (null when the week was
+  /// unrated — fewer than 3 trades, doc 04 §5).
+  ratingBefore Float?
+  ratingAfter  Float?
+  ratingDelta  Float?
+  /// WIN / DRAW / LOSS vs the simulated index, or null when unrated.
+  ratingResult String?
+  /// Plain-words reason, e.g. "You finished #2 of 30 in League 1…"
+  ratingReason String
+  xpAwarded  Int
+  /// { result, xp, reason } — which existing XP value applied and why.
+  xpBreakdown Json
+  createdAt  DateTime    @default(now())
+
+  @@unique([seasonId, userId])
+  @@index([seasonId, leagueId])
+  @@index([userId, createdAt])
+  @@map("weekly_results")
+}

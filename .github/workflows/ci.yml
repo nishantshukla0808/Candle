@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# CI blocks merges on failure (blueprint §14) — pair with branch protection
+# requiring the `ci` job to pass.
+jobs:
+  ci:
+    name: lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: candle
+          POSTGRES_PASSWORD: candle
+          POSTGRES_DB: candle_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U candle -d candle_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://candle:candle@localhost:5432/candle_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-test-secret-that-is-at-least-32-chars
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Prisma validate
+        run: npx prisma validate --schema=apps/api/prisma/schema.prisma
+
+      - name: Prisma generate
+        run: npm run prisma:generate
+
+      - name: Migrate test database
+        run: npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:api
+
+      - name: E2E tests
+        run: npm run test:e2e:api
+
+      - name: Build API
+        run: npm run build:api
+
+      - name: Build web
+        run: npm run build:web

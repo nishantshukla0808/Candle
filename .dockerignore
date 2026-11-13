@@ -1,0 +1,12 @@
+# Keep the Docker build context lean and secret-free.
+node_modules
+**/node_modules
+**/dist
+**/dist-seed
+coverage
+.git
+.env
+**/.env
+uploads
+*.log
+.DS_Store

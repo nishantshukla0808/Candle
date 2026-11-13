@@ -1,0 +1,34 @@
+{
+  "author": "",
+  "description": "Candle web — Next.js frontend (Phase 0 skeleton)",
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.24.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.6.3"
+  },
+  "license": "UNLICENSED",
+  "name": "@candle/web",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev -p 3000",
+    "lint": "eslint app --max-warnings=0",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "npm run build --workspace=@candle/shared",
+    "prelint": "npm run build --workspace=@candle/shared",
+    "pretypecheck": "npm run build --workspace=@candle/shared"
+  },
+  "version": "0.0.0",
+  "dependencies": {
+    "next": "^15.5.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "socket.io-client": "^4.8.4"
+  }
+}

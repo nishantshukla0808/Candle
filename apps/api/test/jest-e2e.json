@@ -1,0 +1,18 @@
+{
+  "displayName": "api-e2e",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": ".*\\.e2e-spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": "./tsconfig.json"
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^@nestjs/swagger$": "<rootDir>/test/swagger-stub.js"
+  }
+}

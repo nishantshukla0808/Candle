@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment & secrets — never commit real values
+.env
+.env.*
+!.env.example
+apps/*/.env
+apps/*/.env.*
+
+# Prisma
+apps/api/prisma/*.db
+
+# Uploads / local storage (dev)
+apps/api/uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test artefacts
+coverage/
+.nyc_output/
+
+dist-seed/
