@@ -1,0 +1,16 @@
+{
+  "name": "candle-lottie-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Author (generate.mjs) and verify (verify.mjs) Candle's Lottie animations. Not part of the app bundle.",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "verify": "node verify.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0",
+    "lottie-web": "^5.12.2",
+    "sharp": "^0.34.0"
+  }
+}
