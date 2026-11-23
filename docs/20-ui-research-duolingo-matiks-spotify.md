@@ -20,28 +20,29 @@
 
 ## 1. The one-line verdict per reference
 
-| Reference | What it teaches Candle, in one line |
-|---|---|
-| Duolingo | Home is a **winding game path**, not a dashboard; one next action; characters are the scenery; failure is safe. |
-| Matiks | The **Arena**: sport framing, 60-second live duels, one visible rating number you protect; mascot = identity + celebration, not a tutor. |
-| Spotify | **One accent, rationed to one verb**; tonal depth, not borders; imagery is the colour system; a living layer (art-derived gradients, Canvas loops, Wrapped). |
-| Brilliant | Adult, premium, restrained: one canvas + one storied accent, thin always-visible progress, forgiveness over punishment, manipulable content. |
-| Headspace | **Aliveness at low amplitude**: breathing sphere, 120-second star drift, illustrated scenes as places; restraint is a feature. |
-| Khan Academy | **Mastery visualisation**: mastery dots with progress arcs, Learner Queue / Daily Missions, effort currency kept separate from skill. |
+| Reference    | What it teaches Candle, in one line                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Duolingo     | Home is a **winding game path**, not a dashboard; one next action; characters are the scenery; failure is safe.                                              |
+| Matiks       | The **Arena**: sport framing, 60-second live duels, one visible rating number you protect; mascot = identity + celebration, not a tutor.                     |
+| Spotify      | **One accent, rationed to one verb**; tonal depth, not borders; imagery is the colour system; a living layer (art-derived gradients, Canvas loops, Wrapped). |
+| Brilliant    | Adult, premium, restrained: one canvas + one storied accent, thin always-visible progress, forgiveness over punishment, manipulable content.                 |
+| Headspace    | **Aliveness at low amplitude**: breathing sphere, 120-second star drift, illustrated scenes as places; restraint is a feature.                               |
+| Khan Academy | **Mastery visualisation**: mastery dots with progress arcs, Learner Queue / Daily Missions, effort currency kept separate from skill.                        |
 
 ---
 
 ## 2. Duolingo — the path, the ledge button, the character layer
 
 ### 2.1 Home is a path, not a dashboard
+
 - In Nov 2022 Duolingo replaced the branching "skill tree" with a single linear,
   step-by-step winding path; one circle = one level, lessons ordered (spaced
-  repetition, mixed new + review), Stories and practice built *into* the path.
+  repetition, mixed new + review), Stories and practice built _into_ the path.
   The old tree "left learners paralysed by choice and skipping foundational
   material"; the path removes choice paralysis.
   Source: https://blog.duolingo.com/new-duolingo-home-screen-design/?lang=en
 - Each unit is headed by a **full-width coloured banner** (e.g. `SECTION 1, UNIT 1
-  — Order at a café`, with a `GUIDEBOOK` button). Banner colour changes per unit
+— Order at a café`, with a `GUIDEBOOK` button). Banner colour changes per unit
   (green, purple, teal, blue, pink, orange observed).
   Sources: https://screenrove.com/duolingo/design ;
   https://github.com/lintendo/axhub-make/blob/HEAD/client/src/themes/duolingo-mobile/DESIGN.md
@@ -50,14 +51,14 @@
   8pt dashed/dotted `#E5E5E5` line; current node grows to 96pt with a pulsing ring;
   a "JUMP HERE" arrow / bouncing `START` bubble sits beside the current node.
   Source: https://github.com/lintendo/axhub-make/blob/HEAD/client/src/themes/duolingo-mobile/DESIGN.md
-- **Node states — colour *is* the state:** completed `#58CC02` + white icon +
+- **Node states — colour _is_ the state:** completed `#58CC02` + white icon +
   darker `#58A700` ledge + crown count; current = same green + pulse ring;
   locked `#E5E5E5` + `#AFAFAF` lock, desaturated; maxed/gold `#FFC800` +
   `#E29F03` ledge; Legendary (Super) `#CE82FF` + sparkle.
   Source: https://github.com/lintendo/axhub-make/blob/HEAD/client/src/themes/duolingo-mobile/DESIGN.md
 - **Landmarks break the monotony:** treasure chest mid-path, trophy at unit/section
   end, special node icons (star, headphones, book, dumbbell, video camera).
-  Tapping a node opens a small popover — *not* a new page — e.g. "Order at a café /
+  Tapping a node opens a small popover — _not_ a new page — e.g. "Order at a café /
   Lesson 2 of 3" + white `START +10 XP` button.
   Sources: https://screenrove.com/duolingo/design ;
   https://blog.duolingo.com/new-duolingo-home-screen-design/?lang=en
@@ -75,6 +76,7 @@
 road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list row.
 
 ### 2.2 Gamification — HUD first, numbers as heroes
+
 - Top HUD always visible on Home: streak / gems / hearts chips (pills, 32pt tall,
   icon 20pt + number in display face 18pt). Colour = mechanic, one colour per
   currency: streak flame Fox Orange `#FF9600`; gems blue diamond `#1CB0F6`;
@@ -101,12 +103,13 @@ road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list
   surrounding UI size.
 
 ### 2.3 Colour, buttons, typography
+
 - Measured palette (live DOM): Feather Green `#58CC02` (primary), button lip
   `#58A700`, Macaw Blue `#1CB0F6`, Iceberg `#DDF4FF`, Eel `#4B4B4B` (text, never
   pure black), Wolf `#777777`, Hare `#AFAFAF`, Snow `#FFFFFF`, Swan `#E5E5E5`,
   Whale/deep navy `#100F3E` / `#131F24` (dark canvas — blue-black, not true black).
   Sources: https://tastekit.dev/gallery/apps/duolingo ; https://screenrove.com/duolingo/design
-- **Ratios — the discipline:** canvas ~white throughout; green *reserved* for
+- **Ratios — the discipline:** canvas ~white throughout; green _reserved_ for
   primary CTAs, big display headlines, logo, footer — "green is the hero colour…
   structure is whitespace + colour, never hairline borders or blurred shadows."
   No gradients anywhere; every fill is flat solid.
@@ -124,7 +127,7 @@ road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list
   https://github.com/lintendo/axhub-make/blob/HEAD/client/src/themes/duolingo-mobile/DESIGN.md
 - **Typography:** Feather Bold (bespoke display face, letterforms echo Duo's
   wings) for display/headlines **only, lowercase, short (≤ ~10 words), never
-  <30px**; DIN Next Rounded Pro (rounded geometric sans) for *everything else*.
+  <30px**; DIN Next Rounded Pro (rounded geometric sans) for _everything else_.
   Never mix the two in one sentence. Free stand-ins: Varela Round (display),
   Fredoka / Nunito / Baloo 2 (body).
   Sources: https://www.canny-creative.com/atlas/brand/duolingo/ ;
@@ -134,6 +137,7 @@ road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list
   Source: https://screenrove.com/duolingo/design
 
 ### 2.4 Characters — the emotional layer
+
 - Duo is "the most important visual aspect of our brand" and "not a logo… the
   emotional layer of the entire application", with dozens of expressions mapped
   to user states: happy (correct), sad (missed day), frustrated (repeated wrong),
@@ -147,7 +151,7 @@ road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list
   "speak" the sentence being translated, each with a unique correct-answer
   animation and a distinct TTS voice.
   Source: https://blog.duolingo.com/building-character/
-- **Placement:** Duo stands *beside* the path (waving, blinking, looking around
+- **Placement:** Duo stands _beside_ the path (waving, blinking, looking around
   — idle animation), peeks in at lesson intro (~80pt, speech bubble with a tip),
   appears ~200pt tall on empty states, ~280pt dancing on celebration overlays.
   Characters communicate via short **speech bubbles, not paragraphs**.
@@ -158,6 +162,7 @@ road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list
   Source: https://blog.duolingo.com/streak-milestone-design-animation/
 
 ### 2.5 Motion, lesson screen, result screen
+
 - **Four channels at once:** every correct/wrong answer pairs colour + sound +
   haptic + animation. Correct = chime/applause; wrong = gentle "oops" tone,
   never a harsh buzzer.
@@ -193,23 +198,24 @@ road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list
   Source: https://github.com/angel225588/vox-langauge-app/blob/HEAD/docs/research/DUOLINGO_UI_PATTERNS.md
 
 ### 2.6 What makes Duolingo premium (not just "more polish")
+
 1. **A bespoke, owned visual language, built for the long term even at
    short-term cost.** The 2018 "Juicy" rebuild (brighter colours, rounder corners,
-   cuter Duo) was purely for long-term brand building, *expecting zero
-   short-term metric improvement*. Quality bar = "Four Elements of Excellence":
-   every feature must be Useful, Intuitive, Delightful, *and* Polished — and they
+   cuter Duo) was purely for long-term brand building, _expecting zero
+   short-term metric improvement_. Quality bar = "Four Elements of Excellence":
+   every feature must be Useful, Intuitive, Delightful, _and_ Polished — and they
    ship "V1s, not MVPs" (polished but minimal; MVPs excuse subpar work).
    Source: https://www.danielscrivner.com/the-duolingo-handbook-summary/
 2. **Type and colour derive from the mascot.** Feather Green is "the colour the
    world associates with Duolingo"; Feather Bold's letterforms echo Duo's body;
-   the 352 CSS variables are *animal-named* (owl, macaw, cardinal, fox, bee,
+   the 352 CSS variables are _animal-named_ (owl, macaw, cardinal, fox, bee,
    koala, beetle) instead of numeric grey scales.
    Sources: https://www.canny-creative.com/atlas/brand/duolingo/ ;
    https://www.shadcn.io/design/duolingo
 3. **One productive contradiction, held everywhere:** a serious behavioural-science
    product rendered in a Saturday-morning-cartoon vocabulary — pure-white canvas,
    no gradients, no stock photos, no blurred shadows; depth from illustration and
-   colour alone. The mascot *replaces* the decoration layer (gradients, mesh
+   colour alone. The mascot _replaces_ the decoration layer (gradients, mesh
    backgrounds, stock photography) that every other ed-tech brand uses.
    Source: https://www.shadcn.io/design/duolingo
 4. **Characters as a moat, not decoration:** "a crucial moat… someone could clone
@@ -218,10 +224,12 @@ road; landmarks (chest/trophy) as sub-goals; popover-to-start, never a dead list
    Source: https://www.danielscrivner.com/the-duolingo-handbook-summary/
 
 ### 2.7 Layered backgrounds / ambient life — honest correction
-Duolingo's home path sits on a mostly **plain white** canvas — it does *not* use
+
+Duolingo's home path sits on a mostly **plain white** canvas — it does _not_ use
 a rich photographic/scenery background behind the nodes. Its aliveness comes from
-*layered flat illustration and living characters placed around a quiet centre*:
-1. **Characters as the scenery layer.** Duo and cast stand *beside* the path at
+_layered flat illustration and living characters placed around a quiet centre_:
+
+1. **Characters as the scenery layer.** Duo and cast stand _beside_ the path at
    intervals (waving, holding a globe, in martial-arts uniform…), each unit's
    characters changing with the unit — scrolling feels like travelling through
    populated places. Duo performs idle animation beside the path: blinking,
@@ -230,7 +238,7 @@ a rich photographic/scenery background behind the nodes. Its aliveness comes fro
    https://www.instagram.com/reel/DLPl7voRnVS/
 2. **Colour-field zoning per unit.** Each unit banner is a different saturated
    colour (green → purple → teal → blue → pink → orange as you scroll), so the
-   *world changes colour* as you progress even though the canvas stays white.
+   _world changes colour_ as you progress even though the canvas stays white.
    Source: https://www.instagram.com/reel/DLPl7voRnVS/
 3. **Depth via overlap + ledges, not lighting.** Illustration rules: only rounded
    rectangle / circle / rounded triangle; ~15 shapes per illustration (6 = too
@@ -248,17 +256,17 @@ a rich photographic/scenery background behind the nodes. Its aliveness comes fro
    home screen is fully static.
 6. **Full-bleed scene changes mark transitions:** lesson-complete = full green
    takeover; streak screen = orange flame world; Super = full navy band. The
-   *background itself changes* to signal "you are somewhere new", rather than a
+   _background itself changes_ to signal "you are somewhere new", rather than a
    modal on top of the same screen.
 7. **The Creedo lesson (a Duolingo-style lesson-map app, 2026):** a beautiful desk
-   scene *competed* with the lesson nodes once buttons/labels/nav were layered on
+   scene _competed_ with the lesson nodes once buttons/labels/nav were layered on
    top. Their fix, directly applicable to Candle: **"a quieter middle, with the
    details that tell you where you are arranged around the sides"** — keep
    scenery at the edges, leave open space behind the path, keep landmarks
-   recognisable but small, and check every background *with the map on it*, on
+   recognisable but small, and check every background _with the map on it_, on
    small phones through desktop. Too much painted detail simplified into flat
    shapes felt like "a vector poster"; the winning version brought back rounded
-   scenery + gentle shading with *fewer* small details.
+   scenery + gentle shading with _fewer_ small details.
    Source: https://www.creedo.faith/blog/making-room-on-the-lesson-map.html
 
 **Candle translation:** quiet centre corridor for the node road; world-building
@@ -268,6 +276,7 @@ life everywhere; scene-change takeovers for celebrations; parallax only on the
 edge scenery, never under tappable nodes.
 
 ### 2.8 Caveats
+
 - Logged-in learn screen, leaderboards, shop, quests and paid flows were **not**
   directly readable (login wall; `duolingo.com/learn` returns marketing when
   logged out). Those sections rely on the Screenrove guest capture + teardowns.
@@ -284,6 +293,7 @@ edge scenery, never under tappable nodes.
 ## 3. Matiks — the Arena (mascot: Sero, not Siro)
 
 ### 3.1 Overall visual language
+
 - **Dark-first UI.** Screen recordings consistently show a dark-theme app: black
   splash screen, dark home, dark duel screens.
   Sources: https://www.facebook.com/reel/3102594389932637/ ;
@@ -308,14 +318,15 @@ edge scenery, never under tappable nodes.
   free app with 7.2M installs. Source: https://www.appbrain.com/app/matiks/com.matiks.app
 - **Typography:** no font name is published. Observable: bold, condensed, all-caps
   display type for headers ("MATIKS", "DAILY CHALLENGES", "VICTORY"/"DEFEAT"),
-  with large numerals for problems, scores and ratings. Hierarchy is *one huge
-  number + one short label*, never dense paragraphs.
+  with large numerals for problems, scores and ratings. Hierarchy is _one huge
+  number + one short label_, never dense paragraphs.
 - **Copy tone is short, punchy, second-person, status-driven:** "Forget boring
   solo puzzles", "Every tap, every calculation, every win makes your brain
   faster", "grab your phone, flex your brain, and step into the arena".
   Source: https://play.google.com/store/apps/details?id=com.matiks.app&hl=en_US
 
 ### 3.2 The character: Sero — identity + celebration, not a tutor
+
 - **Sero is a blue, smiling, blob-like character** — "a small square cake decorated
   to look like the blue Matiks character — a smiling face with closed eyes and
   blush marks" (100-day streak cake unboxing). Community hashtags #matiks #sero.
@@ -332,7 +343,7 @@ edge scenery, never under tappable nodes.
 - **No evidence was found of Sero speaking, giving hints, reacting to answers,
   or appearing inside duel screens.** Gameplay recordings show no mascot in the
   duel HUD — just problems, keypad, timer and scores. The character's job is
-  *identity + celebration*, not tutoring. Transferable lesson: a mascot can carry
+  _identity + celebration_, not tutoring. Transferable lesson: a mascot can carry
   brand and reward emotion without cluttering the learning moment.
 - **Transferable pattern:** one simple, ownable face → repeated identically across
   merch, physical rewards, and event posters → becomes a status symbol users
@@ -340,6 +351,7 @@ edge scenery, never under tappable nodes.
   a cake shaped like the mascot.
 
 ### 3.3 The Arena model — levels, challenges, matches
+
 - **Home is organised by skill category, not by curriculum:** four top-level
   categories — **MATH, MEMORY, PUZZLE, LOGIC** — each containing named duel modes
   (Sprint Duels, Fastest Finger, Flash Anzan, Sudoku, Cross Math, KenKen, Ability
@@ -383,6 +395,7 @@ edge scenery, never under tappable nodes.
   https://bhaskarranjankarn.medium.com/why-people-are-solving-math-problems-for-fun-at-2-am-41d4bbf4c9d4
 
 ### 3.4 Rewards — coins, streaks, physical prizes
+
 - **Currency is called "Pi" (π), not "coins" generically.** Home header shows a
   Pi balance (observed: 195, 125, 3568 in different recordings). Pi is spent on
   boosts, streak restoration, streak shields, custom puzzle themes, tournament
@@ -396,17 +409,17 @@ edge scenery, never under tappable nodes.
   Sources: https://www.instagram.com/reel/Db2YlMJTt89/ ;
   https://www.matiksguide.in/tips/matiks-streak-guide/
 - **Streak Shields (freeze tokens)** are a purchasable/earnable shield: one shield
-  = one missed day forgiven; must be active *before* midnight; max 2 held.
+  = one missed day forgiven; must be active _before_ midnight; max 2 held.
   This is a premium-feeling "insurance" product, not a penalty screen.
   Source: https://www.matiksguide.in/tips/matiks-streak-guide/
 - **Milestone rewards are physical, not just digital — the most distinctive
   Matiks pattern:** 50-day streak → T-shirt; 100-day → a real cake delivered
   (Sero-face cake, "THE 100 ON MATIKS" topper); 200-day → limited-edition hoodie
-  + merch box shipped pan-India. Users post unboxing videos; retention becomes
-  social content. Caveat: fulfilment is a real complaint (users report waiting
-  60+ days for shirts), so the pattern is powerful but operationally risky.
-  Sources: https://www.matiksguide.in/community/ ;
-  https://www.instagram.com/reel/Ddjpqu2tZ-f/
+  - merch box shipped pan-India. Users post unboxing videos; retention becomes
+    social content. Caveat: fulfilment is a real complaint (users report waiting
+    60+ days for shirts), so the pattern is powerful but operationally risky.
+    Sources: https://www.matiksguide.in/community/ ;
+    https://www.instagram.com/reel/Ddjpqu2tZ-f/
 - **Leaderboards are global + friend-based + event-based**, and profiles are
   public stat sheets: per-mode ratings (observed: 1794 Blitz, 1514 Classical),
   max streak (163), total games (916).
@@ -426,11 +439,12 @@ edge scenery, never under tappable nodes.
   Source: https://www.instagram.com/reel/DbwmjwwvhU5/
 
 ### 3.5 Home screen layout & navigation
+
 - **Top status strip:** profile avatar/username + Pi balance + flame streak count
-  + XP (observed together: "3568 coins, 356 flame streak, 94 XP"). The user's
-  *status* is the header — not a menu, not a greeting.
-  Sources: https://www.instagram.com/reel/Db2YlMJTt89/ ;
-  https://www.instagram.com/reel/DPdzuqUDTgt/
+  - XP (observed together: "3568 coins, 356 flame streak, 94 XP"). The user's
+    _status_ is the header — not a menu, not a greeting.
+    Sources: https://www.instagram.com/reel/Db2YlMJTt89/ ;
+    https://www.instagram.com/reel/DPdzuqUDTgt/
 - **Opponent/social strip:** a row of circular avatars labelled "YOU",
   "ALAMIN143", "OMKARRA…", "BLUEWIN…" — other players are present on the home
   screen itself, making it feel inhabited.
@@ -441,13 +455,14 @@ edge scenery, never under tappable nodes.
 - **Category sections (MATH / MEMORY / PUZZLE / LOGIC)** each list their duel
   tiles by name. Tapping a mode starts matchmaking immediately.
 - **No bottom-nav / tab structure could be verified** from the sources available —
-  do not assume one. What is verifiable is the *vertical scroll of sections*
+  do not assume one. What is verifiable is the _vertical scroll of sections_
   (status → people → daily → categories) rather than a dashboard grid of widgets.
 - **Splash/loading is branded, not blank:** black splash ("MATIKS play it smart",
   "GAMES – Unrivaled Performance") → "Getting things ready" loader. Even waiting
   is on-brand. Source: https://www.facebook.com/reel/3102594389932637/
 
 ### 3.6 Motion, celebration, aliveness
+
 - **Rive is the animation backbone (verified technically).** matiks.com's own
   storage keys show cached Rive animation files (`device:rive_cache_*`,
   `RiveAnimationCache#files`) — vector, state-machine-driven character/UI
@@ -455,7 +470,7 @@ edge scenery, never under tappable nodes.
 - **Ritualised transitions:** 3-2-1 countdown into every duel; "Calculating
   result…" with an hourglass animation; full-screen **VICTORY** (with rating
   gain) / **DEFEAT** (red screen) result cards. One reviewer complains the
-  result screen "disappears in a microsecond" — Matiks arguably *under*-
+  result screen "disappears in a microsecond" — Matiks arguably _under_-
   celebrates; a premium redesign should let the result breathe.
   Sources: https://www.facebook.com/reel/3102594389932637/ ;
   https://www.appbrain.com/app/matiks/com.matiks.app
@@ -466,27 +481,29 @@ edge scenery, never under tappable nodes.
   screen is "bold white text over a green radiating background with a stylized
   card graphic" — a radial burst + layered card graphic, not a flat colour; the
   "My Team" view is a soccer **formation grid** with cartoon player cards
-  positioned on it — a *scene* (a pitch) rather than a list. Branded transitional
+  positioned on it — a _scene_ (a pitch) rather than a list. Branded transitional
   scenes (black splash, 3-2-1 countdown, hourglass) replace blank spinners.
   **Not verified:** ambient background motion on the home screen, parallax, or
-  interactive mascot reactions. Matiks' "aliveness" comes from *live humans*
-  (opponent presence, live scores, countdowns, events) and *state-change
-  rituals*, not from decorative ambient animation.
+  interactive mascot reactions. Matiks' "aliveness" comes from _live humans_
+  (opponent presence, live scores, countdowns, events) and _state-change
+  rituals_, not from decorative ambient animation.
   Sources: https://www.instagram.com/reel/DaPLhPEzEBW/ ;
   https://www.facebook.com/reel/1009278461971960/
 
 ### 3.7 Why it feels like a game, not an ERP dashboard
+
 From the founder interview and analysis: "Instead of treating math like a
 subject, we built a game that people love to play"; "we designed Matiks to give
 users the same dopamine hit they get from winning a game or solving a puzzle";
-"Math has always been taught as something you *endure*. Matiks turns it into
-something you *compete in*."
+"Math has always been taught as something you _endure_. Matiks turns it into
+something you _compete in_."
 Sources: https://youngandcalculated.blog/why-so-many-people-fear-math-and-how-matiks-is-making-it-fun-again-calculated-conversations-27-with-mohan-kumar/ ;
 https://bhaskarranjankarn.medium.com/why-people-are-solving-math-problems-for-fun-at-2-am-41d4bbf4c9d4
+
 1. **Sport framing everywhere:** "Arena", "duels", "battles", "leagues", "World
    Cup", "rating" — the vocabulary of sport replaces the vocabulary of school.
 2. **A human opponent, not a progress bar.** Every session is a live match
-   against a named person with a visible rating; losing *status* (rating,
+   against a named person with a visible rating; losing _status_ (rating,
    streak) is the retention engine. "Once your rating starts going up, you're
    not just learning anymore. You're protecting a rank."
 3. **Sessions are 60 seconds, not 30 minutes.** The unit of play fits a queue,
@@ -500,6 +517,7 @@ https://bhaskarranjankarn.medium.com/why-people-are-solving-math-problems-for-fu
    theory. No passive learning. Just pure, competitive problem-solving."
 
 ### 3.8 Gaps / what could not be verified
+
 - No font names, colour hex codes, spacing scale, or component specs are public.
   Do not invent them.
 - Bottom navigation / tab structure, settings screens, and exact home-screen
@@ -515,8 +533,9 @@ https://bhaskarranjankarn.medium.com/why-people-are-solving-math-problems-for-fu
 ## 4. Spotify — one accent, tonal depth, imagery as colour
 
 ### 4.1 The core idea
+
 Spotify is a **content-first dark interface**: the chrome is deliberately
-achromatic and recessive so that *imagery supplies all the colour*. One vivid
+achromatic and recessive so that _imagery supplies all the colour_. One vivid
 accent is rationed to the single most important action (Play). Depth comes from
 stepping surface lightness, not from borders. "We were also an early dark mode
 app, long before dark mode became as popular" and the green was "a very
@@ -526,16 +545,17 @@ Spotify Newsroom, 2026.
 Source: https://newsroom.spotify.com/2026-04-23/spotify-design-history/
 
 ### 4.2 Dark immersive UI — exact layers, ratios, accent discipline
+
 **Surface stack (lightness steps, not borders):**
 
-| Layer | Hex | Role |
-|---|---|---|
-| Shell / pure black | `#000000` | Outer shell, sidebar rail, now-playing bar |
-| Base canvas | `#121212` | Page background everywhere — *never* pure black |
-| Card / surface | `#181818` | Playlist/album cards, dialogs, panels |
-| Interactive fill | `#1f1f1f` | Pill buttons, search input, icon-button circles |
+| Layer                 | Hex                   | Role                                                  |
+| --------------------- | --------------------- | ----------------------------------------------------- |
+| Shell / pure black    | `#000000`             | Outer shell, sidebar rail, now-playing bar            |
+| Base canvas           | `#121212`             | Page background everywhere — _never_ pure black       |
+| Card / surface        | `#181818`             | Playlist/album cards, dialogs, panels                 |
+| Interactive fill      | `#1f1f1f`             | Pill buttons, search input, icon-button circles       |
 | Hover / elevated card | `#252525` – `#282828` | Card hover state, dropdown menus, active sidebar item |
-| Popover / modal floor | `#2a2a2a` | Menus, modals |
+| Popover / modal floor | `#2a2a2a`             | Menus, modals                                         |
 
 **Why `#121212`, not `#000000`:** "a deliberate `#121212` (slightly warmer than
 pure 0), because every album cover… is in that colour-rich, mid-luminance band,
@@ -550,6 +570,7 @@ subdued `#a7a7a7` (metadata) · muted `#727272` (tertiary) · disabled `#535353`
 Contrast AAA: white on `#121212` = 17.4:1; `#a7a7a7` on `#121212` = 6.6:1.
 
 **Accent green — rationed, functional, never decorative:**
+
 - Brand green `#1ed760` (marketing; legacy `#1db954` 2015–2023). In-app Encore
   green sampled from production screens is `#1CD05E` — the marketing green
   "never appears in product UI" per one pixel-sampled analysis.
@@ -560,7 +581,7 @@ Contrast AAA: white on `#121212` = 17.4:1; `#a7a7a7` on `#121212` = 6.6:1.
   AAA, "one of Spotify's strongest brand signals: AAA contrast, plus a
   confident, almost neon-sign feel."
 - Semantic colours muted for dark legibility: error `#f3727f` (soft pink-red),
-  warning `#ffa42b`, info `#539df5`. Success *reuses* the brand green.
+  warning `#ffa42b`, info `#539df5`. Success _reuses_ the brand green.
 - **Colour ratio (the transferable rule):** ~95% achromatic charcoal + white/grey
   text, ~5% single accent, and all other colour comes from content imagery.
   "The complete brand palette is green plus a stack of achromatic charcoals —
@@ -576,6 +597,7 @@ https://styles.refero.design/style/cc59e195-fed0-4928-96d1-303752786073 ;
 https://www.m--k.me/design-systems/spotify.html
 
 ### 4.3 Navigation — a quiet utility rail
+
 - **Three-pane chrome, unchanged since 2014:** 240px pure-black `#000000` left
   sidebar · `#121212` main panel · 90px pinned now-playing bar across the bottom.
 - **Sidebar:** logo top-left, nav below, library list fills the rest. Active item
@@ -583,7 +605,7 @@ https://www.m--k.me/design-systems/spotify.html
   hover → white text, background stays transparent. No coloured fill, no left
   border indicator — restraint is the signal.
 - **2023 redesign:** sidebar became "Your Library" — artwork thumbnails beside
-  every playlist/artist, filter chips, search *inside* the library, drag-to-
+  every playlist/artist, filter chips, search _inside_ the library, drag-to-
   resize, collapse to an **icon-only vertical strip of artwork**.
   Source: https://newsroom.spotify.com/tag/user-experience/
 - **Top bar (64px, inside main panel):** back/forward arrows, search, profile
@@ -595,11 +617,12 @@ https://www.m--k.me/design-systems/spotify.html
 - **Mobile collapse:** sidebar → bottom-tab nav (Home / Search / Library only);
   now-playing bar condenses to a 64px mini-player, tap expands to full-screen.
   The bar is **never removed** — internal regions collapse instead.
-- **Transferable principle:** navigation is a quiet utility rail that *gets out
-  of the way*; the content panel owns the screen. Wayfinding = typography weight
-  + one accent, not coloured pills or borders.
+- **Transferable principle:** navigation is a quiet utility rail that _gets out
+  of the way_; the content panel owns the screen. Wayfinding = typography weight
+  - one accent, not coloured pills or borders.
 
 ### 4.4 Cards — imagery-first, pill-and-circle geometry
+
 - **Album tile (canonical content unit):** `#181818` fill, **8px radius**, 16px
   padding, **1:1 cover art on top**, 8px gap, title 18px/700, artist 14px/400
   `#a7a7a7` beneath. **No shadow at rest.** Tile widths 168–220px; grid 5 cols
@@ -613,7 +636,7 @@ https://www.m--k.me/design-systems/spotify.html
   pill), play controls 50% circle, search 500px pill, cards tight 6–8px, panels
   10–20px. "There is essentially no square corner on any interactive surface —
   pill-and-circle geometry is the system's tactile identity."
-- **Imagery-first:** the card *is* the artwork — text is two lines max, metadata
+- **Imagery-first:** the card _is_ the artwork — text is two lines max, metadata
   in grey. Artist cards use full-circle portraits. Feature cards (Daily Mix,
   Wrapped) use a gradient sampled from the cover art:
   `linear-gradient(135deg, var(--cover-color), #181818)`.
@@ -626,6 +649,7 @@ https://www.m--k.me/design-systems/spotify.html
   row's edge cues horizontal scrolling.
 
 ### 4.5 Typography, spacing, collections
+
 - **Font:** SpotifyMixUI (body) + SpotifyMixUITitle (display) — proprietary,
   from the CircularSp family. Open substitute: **Inter**, tightening uppercase
   letter-spacing from 1.4px to 1.2px.
@@ -668,17 +692,18 @@ https://www.m--k.me/design-systems/spotify.html
   rows), "different for almost every user."
 
 ### 4.6 Motion
-| Moment | Spec |
-|---|---|
-| Easing — standard / out / spring | `cubic-bezier(0.4,0,0.2,1)` / `(0.3,0,0.4,1)` / `(0.34,1.56,0.64,1)` |
-| Durations | fast 100ms · standard 200ms · slow 400ms · tile hover 300ms |
-| Tile hover | bg `#181818→#282828` (200ms) + cover shadow fade (300ms) + FAB `scale(0)→scale(1)` spring, 200ms, 100ms delay |
-| Primary CTA hover | `#1ed760→#1fdf64` + `scale(1.04)`, 200ms; pressed `#169c46`, scale back to 1.0 |
-| Liked heart | scale 1.0→1.2→1.0 over 300ms spring, colour flips to green at midpoint |
-| Modal in | 200ms ease-out, scale 0.96→1.0 + opacity 0→1 |
-| Toast | slide down + opacity 200ms; auto-dismiss after 2s |
-| Page change | 100ms opacity fade of content only — sidebar + player bar persist; hero gradient regenerates from the new cover art |
-| Equalizer | 3 bars, sine-wave, 1.4s loop |
+
+| Moment                           | Spec                                                                                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Easing — standard / out / spring | `cubic-bezier(0.4,0,0.2,1)` / `(0.3,0,0.4,1)` / `(0.34,1.56,0.64,1)`                                                |
+| Durations                        | fast 100ms · standard 200ms · slow 400ms · tile hover 300ms                                                         |
+| Tile hover                       | bg `#181818→#282828` (200ms) + cover shadow fade (300ms) + FAB `scale(0)→scale(1)` spring, 200ms, 100ms delay       |
+| Primary CTA hover                | `#1ed760→#1fdf64` + `scale(1.04)`, 200ms; pressed `#169c46`, scale back to 1.0                                      |
+| Liked heart                      | scale 1.0→1.2→1.0 over 300ms spring, colour flips to green at midpoint                                              |
+| Modal in                         | 200ms ease-out, scale 0.96→1.0 + opacity 0→1                                                                        |
+| Toast                            | slide down + opacity 200ms; auto-dismiss after 2s                                                                   |
+| Page change                      | 100ms opacity fade of content only — sidebar + player bar persist; hero gradient regenerates from the new cover art |
+| Equalizer                        | 3 bars, sine-wave, 1.4s loop                                                                                        |
 
 - **Speed is a feature:** "The interaction is faster than Netflix's deliberate
   0.75s dwell — Spotify's tiles respond on hover-enter, not on dwell, because
@@ -692,18 +717,19 @@ https://www.m--k.me/design-systems/spotify.html
   primary play ≥48×48.
 
 ### 4.7 Layered backgrounds, ambient elements, scene depth
+
 1. **Cover-art-derived atmosphere (the master trick).** Every playlist/album page
    washes its top 232px in a gradient sampled from the cover art, fading into
    `#121212`. On mobile Now Playing, the whole screen is a vertical gradient
    from the track's dominant colour (100% opacity, top) to canvas black (bottom)
    over ~60% of viewport height, recalculated per track at playback time.
-   *The content colours the room; the chrome never does.*
+   _The content colours the room; the chrome never does._
 2. **Scrims, not overlays.** Legibility over imagery uses gradient scrims:
    `linear-gradient(180deg, rgba(0,0,0,0.6), transparent)` (top) and
    `linear-gradient(0deg, rgba(0,0,0,0.7), transparent)` (card bottom) — soft
    light falloff, never a flat dark panel or a hard box.
 3. **Canvas — ambient looping visuals.** A 3–8 second seamless 9:16 looping video
-   (or still) that *replaces static album art* on the Now Playing screen,
+   (or still) that _replaces static album art_ on the Now Playing screen,
    autoplaying for the whole song. Spotify's own data: +5% streams, +145%
    shares, +20% saves for tracks with Canvas. The rules are instructive:
    "ambient and complementary… Mood, not story" — slow drift, abstract textures
@@ -712,7 +738,7 @@ https://www.m--k.me/design-systems/spotify.html
    artwork, for the streaming age." Source: https://artists.spotify.com/en/canvas
 4. **Wrapped — the annual immersive set-piece.** Once a year the restraint
    inverts: full-screen gradient backgrounds per slide, oversized gradient-filled
-   numerals (96px, 900-weight, −0.05em tracking) used *as pattern*, condensed
+   numerals (96px, 900-weight, −0.05em tracking) used _as pattern_, condensed
    type, flat bold colour fields with clean text kept on flat areas for
    legibility. Wrapped "set a standard in the industry… inspired many copycats"
    and turned personal data into a shareable visual story (73.7B views in 2023).
@@ -722,7 +748,7 @@ https://www.m--k.me/design-systems/spotify.html
    scrubber that turns green on hover, the heart pop — small continuous motion
    signals "this is alive right now" without animating the whole page.
 6. **Easter eggs & personality as depth.** The Now Playing view once flipped
-   upside-down for *Stranger Things*; artist-specific Easter eggs (Taylor Swift
+   upside-down for _Stranger Things_; artist-specific Easter eggs (Taylor Swift
    2024, Bad Bunny 2025); a hidden "Eat This Playlist" game; time-aware
    greetings ("Good evening, Richard"). "There are so many things you don't
    instantly see, but you feel."
@@ -732,11 +758,13 @@ https://www.m--k.me/design-systems/spotify.html
    reserved for the brand, not for elevation.
 
 ### 4.8 What makes it premium rather than a grey ERP dashboard
-Seven decisions, all the *opposite* of dashboard defaults:
+
+Seven decisions, all the _opposite_ of dashboard defaults:
+
 1. **One accent, rationed to one verb** (Play). ERP dashboards spray 4–6 status
    colours; Spotify has exactly one, and it means "the action."
 2. **Imagery is the colour system.** The UI is achromatic by design; every splash
-   of colour is *content* (cover art), so the screen always feels rich without
+   of colour is _content_ (cover art), so the screen always feels rich without
    the chrome trying.
 3. **Depth = lightness steps + heavy neutral shadows**, not borders, dividers and
    boxes. Panels touch; separation is tonal.
@@ -752,31 +780,33 @@ Seven decisions, all the *opposite* of dashboard defaults:
    personal.
 
 ### 4.9 Candle translation (Spotify → Candle)
-| Spotify pattern | Candle translation |
-|---|---|
-| Green rationed to Play | Gold `#E9B44C` rationed to Start Duel / primary CTA, active nav, streak, progress — nothing else |
-| `#121212 → #181818 → #1f1f1f → #282828` tonal stack | Ink `#0B1120` base, stepped card surfaces; no bordered boxes |
-| Album tile = artwork + 2 lines | Lesson/duel tile = mentor/lesson art + title + meta; hover reveals circular gold "Play" FAB |
-| Cover-art-derived hero gradient (232px fade) | Duel/lesson hero gradient sampled from that lesson's art or mentor colour |
+
+| Spotify pattern                                     | Candle translation                                                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Green rationed to Play                              | Gold `#E9B44C` rationed to Start Duel / primary CTA, active nav, streak, progress — nothing else                          |
+| `#121212 → #181818 → #1f1f1f → #282828` tonal stack | Ink `#0B1120` base, stepped card surfaces; no bordered boxes                                                              |
+| Album tile = artwork + 2 lines                      | Lesson/duel tile = mentor/lesson art + title + meta; hover reveals circular gold "Play" FAB                               |
+| Cover-art-derived hero gradient (232px fade)        | Duel/lesson hero gradient sampled from that lesson's art or mentor colour                                                 |
 | Shelves: Made For You / Recently Played / Daily Mix | "Continue learning" / "Daily Duel" / "Made for you" / league rails; small tiles for familiar, large feature cards for new |
-| Now-playing bar (persistent, 90px) | Persistent "now learning" bar: current lesson/duel, progress scrubber, streak — never hidden, collapses on mobile |
-| Scrubber: white fill → accent on hover | Lesson progress: dark rail, white fill, gold on hover |
-| Equalizer on playing row | Animated live indicator on the active duel/quest row |
-| Wrapped (annual stat spectacle) | Season-end recap: oversized 96px gold numerals, gradient stat slides, shareable |
-| Canvas (3–8s ambient loop) | Looping ambient background on duel lobby / lesson hero — mood, not story |
-| Time-aware greeting | "Good evening, Nishu" + streak nudge in the greeting slot |
-| Encore token system (22 systems → 1) | One token layer: surfaces, one accent, type scale, radii, motion — before building screens |
+| Now-playing bar (persistent, 90px)                  | Persistent "now learning" bar: current lesson/duel, progress scrubber, streak — never hidden, collapses on mobile         |
+| Scrubber: white fill → accent on hover              | Lesson progress: dark rail, white fill, gold on hover                                                                     |
+| Equalizer on playing row                            | Animated live indicator on the active duel/quest row                                                                      |
+| Wrapped (annual stat spectacle)                     | Season-end recap: oversized 96px gold numerals, gradient stat slides, shareable                                           |
+| Canvas (3–8s ambient loop)                          | Looping ambient background on duel lobby / lesson hero — mood, not story                                                  |
+| Time-aware greeting                                 | "Good evening, Nishu" + streak nudge in the greeting slot                                                                 |
+| Encore token system (22 systems → 1)                | One token layer: surfaces, one accent, type scale, radii, motion — before building screens                                |
 
 ---
 
 ## 5. Brilliant — adult, premium, restrained
 
 **Positioning:** "Duolingo for logical thinking" but adult, premium, restrained.
-"Its design language reads as *education that respects your intelligence —
-premium, structured, never cute.*"
+"Its design language reads as _education that respects your intelligence —
+premium, structured, never cute._"
 Source: https://www.webdesignhot.com/design.md/brilliant-org/
 
 ### 5.1 Home, loop, navigation
+
 - **Mobile home = continuation, not catalogue:** a single active course resumes
   front and centre. Top strip holds reward currencies (keys, discount, coin,
   lightning bolt); bottom nav is just **Home / Courses / Premium / Profile**.
@@ -802,6 +832,7 @@ Source: https://www.webdesignhot.com/design.md/brilliant-org/
   Source: http://brilliant.org/help/features/
 
 ### 5.2 Colour, typography, cards, buttons (note the split — do not conflate)
+
 - **Marketing site (brilliant.org):** near-black canvas **`#0c0e16`** (never pure
   black), single accent **"Brilliant Coral" `#fc6e51`** for CTAs, white body copy.
   Diagram accents (yellow `#ffd44d`, cyan `#5ac3e5`, purple `#b582ff`) appear
@@ -816,10 +847,11 @@ Source: https://www.webdesignhot.com/design.md/brilliant-org/
   Sources: https://designmunk.com/brilliant/ ;
   https://www.kurslotse.de/en/apps/learning-apps/coding-apps/brilliant/
 - **Premium lesson:** one canvas + one accent voltage, and the accent has a
-  *story* (coral evokes warm orange of physics-textbook diagrams) — not a
+  _story_ (coral evokes warm orange of physics-textbook diagrams) — not a
   default palette pick.
 
 ### 5.3 Gamification
+
 - **XP** from concepts/problems; **weekly XP sets standing in Leagues**: weekly
   competitions between **30 learners**, **10 league levels named after elements,
   Hydrogen → Einsteinium**.
@@ -836,6 +868,7 @@ Source: https://www.webdesignhot.com/design.md/brilliant-org/
   sections — ambient, always visible.
 
 ### 5.4 Motion, celebration, character
+
 - **Koji transition animation between learning steps**, flanked by narrow
   progress bars — "the app thus continuously makes visible that you have
   completed a section and have arrived at the next step. This constant small
@@ -853,23 +886,24 @@ Source: https://www.webdesignhot.com/design.md/brilliant-org/
   on, walks you through thinking step by step **without giving the answer**, can
   highlight/rearrange on-screen interactives. **Speaks first by default** — talks
   at the start of every lesson page — reacts to correct answers, signals when
-  help is available. A *functional* character (tutor + hints + router), not
+  help is available. A _functional_ character (tutor + hints + router), not
   decoration. **Validates Candle's existing host rule:** hosts speak
   before/after, never during a rated question.
   Sources: http://brilliant.org/help/features/ ;
   https://understandtutor.com/blog/brilliant-review
 
 ### 5.5 Layered backgrounds / ambient depth
+
 - **Marketing hero: full-bleed animated geometry** — circles morphing to spheres,
   triangles tiling into hexagons, isometric grids in coral/white on near-black.
-  The geometry *is* the background layer; it moves slowly and structurally, like
+  The geometry _is_ the background layer; it moves slowly and structurally, like
   a living diagram. Source: https://www.webdesignhot.com/design.md/brilliant-org/
 - **In-app, the "scene" is the problem itself:** draggable diagrams, balance
   scales, area models — manipulable mini-scenes, not static question cards.
-  Depth comes from *manipulable* visuals, not background layers.
+  Depth comes from _manipulable_ visuals, not background layers.
 - **Honest limit:** the app interior is deliberately flat and minimal ("the focus
   is on the problem. No distractions"). Brilliant earns immersion from the
-  *content* animating, not ambient backgrounds — copy its discipline, not its
+  _content_ animating, not ambient backgrounds — copy its discipline, not its
   flatness, if Candle wants an immersive world.
   Source: https://free-apps-android.com/brilliant/
 
@@ -882,6 +916,7 @@ scaffolding". Apple Design Award + Webby laurels.
 Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-screens/headspace
 
 ### 6.1 Home / learn screen
+
 - **"Today" tab = personalised home.** Observed in-app: sky-and-clouds header,
   **"Recents" / "Favorites" pill toggles**, "Your essentials" led by one hero
   card — **"Today's Meditation"** (yellow-orange card, 3–20 min, streak counter,
@@ -903,12 +938,13 @@ Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-s
   Source: https://www.unfairly.ai/brand-guidelines/headspace/
 
 ### 6.2 Colour, typography, cards, buttons
+
 - **Measured colour ratio on headspace.com (1440px): white 59% · yellow 24% ·
   CTA blue 9% · sky blue 8%.** Orange covers almost no area — logo and
   illustrations only. Source: https://www.unfairly.ai/brand-guidelines/headspace/
 - **Tokens:** page floor **warm off-white `#f9f4f2`**; text **warm charcoal
   `#2d2c2b`** (pure black only in form inputs); **single saturated voltage blue
-  `#0061ef`** living *only* on the primary CTA pill + a few accent dots;
+  `#0061ef`** living _only_ on the primary CTA pill + a few accent dots;
   **character orbs** — saffron `#ffce00`, pink `#ffa1cc`, aqua `#00a4ff`, grass
   `#02873e`, ultraviolet `#3b197f`; logo orange dot `#f47d31`; deep indigo
   `#3b197f` for contemplative moments.
@@ -929,6 +965,7 @@ Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-s
   Source: https://www.floow.design/aso-screens/headspace
 
 ### 6.3 Gamification — deliberately minimal (the anti-pattern reference)
+
 - Tracks exactly **two things: minutes practiced (today/week/month) + streak**
   (shown, not emphasised). **No XP. No levels. No badges. No quests.** Breaking
   a streak triggers **no loss messaging** — "a gentle nudge to return, not a
@@ -939,16 +976,18 @@ Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-s
   like a game dashboard.
 
 ### 6.4 Navigation / discovery
+
 - Mobile bottom tab bar: **Today / Explore / Ebb / Care / (profile)**. Ebb = AI
   companion; Care = therapy/coaching.
   Source: https://www.facebook.com/annmariewalts1/posts/pfbid0Gp21ZDTtVAzh6orfg3XfcyiLyTh7s6CcmAjqajPfAbirQNuLkQnokjGjQozsoCkSl
 - Chrome minimal on purpose: search icon top-left, account top-right, **no
   typical nav bar** on web — single-page design. Discovery is **state-led**
-  ("how are you feeling?"), and Today's first action is a *next step*, not a
+  ("how are you feeling?"), and Today's first action is a _next step_, not a
   browse grid. Sources: https://squeezegrowth.com/headspace-review/ ;
   https://www.g2.com/products/headspace-headspace/reviews
 
 ### 6.5 Motion / celebration — the signature
+
 - **The breathing circle.** The play button **breathes in/out, expanding/
   contracting like lungs**; measured at **scale 1.0 → 1.04 → 1.0 over 8s**
   (one implementation: 12s cycle — 4s inhale, 2s hold, 4s exhale, 2s hold).
@@ -970,6 +1009,7 @@ Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-s
   acknowledgement + breathing option.
 
 ### 6.6 Character / mascot
+
 - **Orange-beanie mascot is a cultural icon; broader cast = hand-drawn character
   orbs** — round, flat-colour, face-led, floating between sections and inside
   feature chips. They **replace stock photography, gradients, and mesh
@@ -985,7 +1025,8 @@ Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-s
   Source: https://github.com/lintendo/axhub-make/blob/HEAD/client/src/themes/headspace-mobile/DESIGN.md
 
 ### 6.7 Layered backgrounds / ambient / scene depth — STRONGEST of the six
-- **Sleepcasts are immersive *audio scenes*:** placed in a scene — **a slow
+
+- **Sleepcasts are immersive _audio scenes_:** placed in a scene — **a slow
   train, a rainy day in a bookshop, a desert campfire, a moonlit garden, a drift
   over a sleepy shoreline**. 45–55 min, **remixed nightly** to prevent
   memorisation; layered ambient sounds (rain, wind, fire) under narration.
@@ -993,7 +1034,7 @@ Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-s
   https://www.mobileappdaily.com/product-review/headspace
 - **Visual scene depth:** full illustrated scenes (not photos) built from
   circles/soft shapes in bold flat colour; App Store wave gradient and in-app
-  sky-and-clouds header give each screen a *place*. **Ambient motion as a
+  sky-and-clouds header give each screen a _place_. **Ambient motion as a
   layer:** barely-perceptible star drift, breathing orbs, slow fades — never
   fully static, never demanding attention. Key transferable idea: **aliveness at
   low amplitude**.
@@ -1006,7 +1047,7 @@ Sources: https://www.shadcn.io/design/headspace ; https://www.floow.design/aso-s
 - **Transferable:** (a) warm off-white canvas + one gold voltage validates
   Candle's ink+gold ratio discipline; (b) one signature ambient element
   (breathing sphere → Candle could have a living "Exchange" scene: ticker glow,
-  ambient market pulse); (c) characters with *emotional range* as companions;
+  ambient market pulse); (c) characters with _emotional range_ as companions;
   (d) state-led discovery ("what do you want to do today?" — learn / duel /
   trade); (e) celebration at low amplitude.
 
@@ -1020,6 +1061,7 @@ Sources: https://www.webdesignhot.com/design.md/khan-academy/ ;
 https://blog.khanacademy.org/meet-the-new-khan-academy-classroom-experience/
 
 ### 7.1 Home / learn screen
+
 - **Learner Home + Learner Queue (Reimagined 2026):** instead of an assignment
   list, **a focused path through what comes next**. **Daily Missions** (due
   today/tomorrow/overdue), **Weekly Missions**, **Unit Missions** (replace old
@@ -1038,6 +1080,7 @@ https://blog.khanacademy.org/meet-the-new-khan-academy-classroom-experience/
   Source: https://www.fastcompany.com/3041180/w_750
 
 ### 7.2 Colour, typography, cards, buttons
+
 - **Tokens:** canvas paper-white `#ffffff` (alt bands `#f7f8fa`); **brand mint
   `#14bf96`** on wordmark, CTA, mascot, mastery dots; text warm near-black
   `#21242c`; cream `#fef9e9` for tip/encouragement bands; mint promo band
@@ -1060,6 +1103,7 @@ https://blog.khanacademy.org/meet-the-new-khan-academy-classroom-experience/
   128px; header 64px, sidebar 280px, content max 1240px.
 
 ### 7.3 Gamification — mastery system (the core, most transferable pattern)
+
 - **Mastery system:** skills progress **Not Started → Attempted → Familiar →
   Proficient → Mastered**. Each stage = **colour-coded mastery dot with a
   progress arc**: attempted grey `#a8aab2` · familiar blue `#1865f2` ·
@@ -1084,36 +1128,39 @@ https://blog.khanacademy.org/meet-the-new-khan-academy-classroom-experience/
 - **Streak:** orange fire `#e07c2c`; "Persistence" badge for 5-day streak.
 
 ### 7.4 Navigation, motion, character
+
 - Guided, not browsed: Queue + Missions tell you what to do next; the tree shows
-  where you are. The two persistent anchors are *help* (Khanmigo Assistant, top)
-  and *progress* (Gem total, upper-right) — not menus.
+  where you are. The two persistent anchors are _help_ (Khanmigo Assistant, top)
+  and _progress_ (Gem total, upper-right) — not menus.
   Source: https://blog.khanacademy.org/meet-the-new-khan-academy-classroom-experience/
 - **Rainbow confetti erupts on correct answers**; a **friendly monster guides
   lessons**; iPad **handwriting recognition** + scratch-work area beside each
   problem. Source: https://www.fastcompany.com/3041180/w_750
 - **Gem-earn moment (launch video):** on-screen **"10 gems earned!"** + unlocked-
   item reveal ("Oval Glasses", "VR Headset", "Ranger Hat") — the reward is a
-  *visible thing for your character*, not just a number. Tagline: "More sparkle.
+  _visible thing for your character_, not just a number. Tagline: "More sparkle.
   More fun." Source: https://www.facebook.com/reel/2335191556884372/
 - **Character — Khanmigo (owl AI tutor):** customisable via Gems (Collections;
   one hat + one glasses). During Gem Jam each team's Khanmigo becomes a
-  **Racermigo** that visibly races as the team earns Gems — **the mascot *is*
+  **Racermigo** that visibly races as the team earns Gems — **the mascot _is_
   the progress bar**.
   Source: https://support.khanacademy.org/hc/en-us/articles/45128558403341-How-do-I-use-Gem-Jam-with-my-students-in-Khan-Academy-Reimagined
 
 ### 7.5 Layered backgrounds / ambient — HONEST ASSESSMENT: THIN
+
 Khan is **deliberately flat**: paper-white canvas, flat cards, 1px borders, soft
 shadows, no gradients, no ambient layers, no scene backgrounds. Warmth comes
 from the illustration system, cream encouragement bands, mint-tinted tiles —
-colour *fields*, not depth. Its "alive" quality is in micro-moments: mastery
+colour _fields_, not depth. Its "alive" quality is in micro-moments: mastery
 arcs filling, confetti, Racermigo racing, gem-earn reveals. **Verdict for
 Candle:** take Khan's mastery visualisation and Mission/queue structure; do
 **not** take its backgrounds. For immersion, Headspace and Brilliant are the models.
 
 ### 7.6 Why it feels premium
+
 "Mission-driven warmth": one mint, one humanist sans (Lato since 2012), generous
 16px/1.5 body, encouraging plain-spoken voice. It never looks like a dashboard
-because **there is no dashboard grid** — there is a *tree* and a *queue*.
+because **there is no dashboard grid** — there is a _tree_ and a _queue_.
 **Transferable:** (a) **mastery dots with progress arcs** as skill-progress
 language (directly mappable to Candle's per-topic/per-duel mastery); (b)
 **Learner Queue / Daily Mission** as home structure; (c) **effort currency vs
@@ -1126,37 +1173,37 @@ customisation); (e) **team race where the mascot IS the progress bar**
 
 ## 8. Cross-reference synthesis — patterns to STEAL
 
-| Pattern | From | Candle mapping |
-|---|---|---|
-| One canvas + one accent voltage + one display family | All six | Ink + gold already; protect the ratio |
-| Home = "what's next", not a catalogue | Brilliant resume; Khan Queue/Missions; Headspace Today | Learn screen opens on next lesson/duel |
-| Progress always visible, ambiently | Brilliant thin green bar; Khan mastery dots; Headspace minutes | Thin progress bar + per-topic mastery dots everywhere |
-| Effort currency ≠ skill signal | Khan; Brilliant (XP vs Leagues) | XP vs Ratings — already correct, keep it |
-| Forgiveness > punishment | Brilliant Streak Charges (max 2); Matiks Streak Shields (max 2) | Streak freeze/charge, never loss-shaming |
-| Leagues of 30, themed level names | Brilliant (elements); Duolingo (30/ league) | Finance-themed league tiers |
-| Tutor speaks before/after, never during | Brilliant Koji; Duolingo cast | Already a Candle rule — validated |
-| Reward = visible thing on your character | Khan (50 gems → accessory) | Mentor/avatar customisation unlocks |
-| Mascot IS the progress bar | Khan Racermigo | Mentor climbing a tower / market chart as league progresses |
-| One signature ambient element | Headspace breathing sphere; Brilliant animated geometry | A living Exchange scene (ambient ticker glow / market pulse), low amplitude |
-| Celebration frequent, specific, low-amplitude | Brilliant lesson-complete; Headspace 1.02 overshoot | Small specific win screens, not confetti spam |
-| State-led discovery | Headspace ("how are you feeling?") | "What do you want to do today?" — learn / duel / trade |
-| One guided road, not a catalogue | Duolingo path; Khan Path view | The Exchange path: zones as units on a winding road |
-| Node states as colour | Duolingo | Completed gold / current pulsing / locked muted |
-| 3D-ledge chunky buttons | Duolingo | Gold primary with a hard darker-gold ledge, press = down 4px |
-| Sport framing, live opponent | Matiks Arena | Duel lobby as a live event: vs cards, 3-2-1 countdown, live scores |
-| One visible rating number you protect | Matiks; Duolingo league | Ratings as the hero number on profile/duels |
-| Rationed accent = one verb | Spotify | Gold = Start Duel / primary CTA only |
-| Tonal depth, not borders | Spotify | Ink stepped surfaces; no bordered grey boxes |
-| Imagery is the colour system | Spotify; Headspace orbs | Mentor/lesson art supplies colour; chrome stays ink+gold |
-| Art-derived hero gradient | Spotify (232px fade) | Duel/lesson hero gradient from that lesson's art or mentor colour |
-| Persistent "now learning" bar | Spotify now-playing bar | Current lesson/duel + progress, never hidden, collapses on mobile |
-| Canvas ambient loop — mood, not story | Spotify | Looping ambient background on duel lobby / lesson hero |
-| Season-end recap spectacle | Spotify Wrapped | Oversized 96px gold numerals, gradient stat slides, shareable |
-| Quiet centre, scenery at the edges | Duolingo + Creedo lesson | Map corridor quiet; world-building at edges; parallax only on edges |
-| Characters as scenery, idle life always on | Duolingo; Headspace | Mentors blink/breathe/react beside the path; current node pulses |
-| Full-bleed scene-change takeovers | Duolingo; Spotify Wrapped | Celebrations change the whole background, not just a toast |
-| Mastery dots with progress arcs | Khan | Per-topic / per-duel mastery on Learn + Profile |
-| No ads, ever | Matiks | Premium feel = no interruptions (already Candle's stance) |
+| Pattern                                              | From                                                            | Candle mapping                                                              |
+| ---------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| One canvas + one accent voltage + one display family | All six                                                         | Ink + gold already; protect the ratio                                       |
+| Home = "what's next", not a catalogue                | Brilliant resume; Khan Queue/Missions; Headspace Today          | Learn screen opens on next lesson/duel                                      |
+| Progress always visible, ambiently                   | Brilliant thin green bar; Khan mastery dots; Headspace minutes  | Thin progress bar + per-topic mastery dots everywhere                       |
+| Effort currency ≠ skill signal                       | Khan; Brilliant (XP vs Leagues)                                 | XP vs Ratings — already correct, keep it                                    |
+| Forgiveness > punishment                             | Brilliant Streak Charges (max 2); Matiks Streak Shields (max 2) | Streak freeze/charge, never loss-shaming                                    |
+| Leagues of 30, themed level names                    | Brilliant (elements); Duolingo (30/ league)                     | Finance-themed league tiers                                                 |
+| Tutor speaks before/after, never during              | Brilliant Koji; Duolingo cast                                   | Already a Candle rule — validated                                           |
+| Reward = visible thing on your character             | Khan (50 gems → accessory)                                      | Mentor/avatar customisation unlocks                                         |
+| Mascot IS the progress bar                           | Khan Racermigo                                                  | Mentor climbing a tower / market chart as league progresses                 |
+| One signature ambient element                        | Headspace breathing sphere; Brilliant animated geometry         | A living Exchange scene (ambient ticker glow / market pulse), low amplitude |
+| Celebration frequent, specific, low-amplitude        | Brilliant lesson-complete; Headspace 1.02 overshoot             | Small specific win screens, not confetti spam                               |
+| State-led discovery                                  | Headspace ("how are you feeling?")                              | "What do you want to do today?" — learn / duel / trade                      |
+| One guided road, not a catalogue                     | Duolingo path; Khan Path view                                   | The Exchange path: zones as units on a winding road                         |
+| Node states as colour                                | Duolingo                                                        | Completed gold / current pulsing / locked muted                             |
+| 3D-ledge chunky buttons                              | Duolingo                                                        | Gold primary with a hard darker-gold ledge, press = down 4px                |
+| Sport framing, live opponent                         | Matiks Arena                                                    | Duel lobby as a live event: vs cards, 3-2-1 countdown, live scores          |
+| One visible rating number you protect                | Matiks; Duolingo league                                         | Ratings as the hero number on profile/duels                                 |
+| Rationed accent = one verb                           | Spotify                                                         | Gold = Start Duel / primary CTA only                                        |
+| Tonal depth, not borders                             | Spotify                                                         | Ink stepped surfaces; no bordered grey boxes                                |
+| Imagery is the colour system                         | Spotify; Headspace orbs                                         | Mentor/lesson art supplies colour; chrome stays ink+gold                    |
+| Art-derived hero gradient                            | Spotify (232px fade)                                            | Duel/lesson hero gradient from that lesson's art or mentor colour           |
+| Persistent "now learning" bar                        | Spotify now-playing bar                                         | Current lesson/duel + progress, never hidden, collapses on mobile           |
+| Canvas ambient loop — mood, not story                | Spotify                                                         | Looping ambient background on duel lobby / lesson hero                      |
+| Season-end recap spectacle                           | Spotify Wrapped                                                 | Oversized 96px gold numerals, gradient stat slides, shareable               |
+| Quiet centre, scenery at the edges                   | Duolingo + Creedo lesson                                        | Map corridor quiet; world-building at edges; parallax only on edges         |
+| Characters as scenery, idle life always on           | Duolingo; Headspace                                             | Mentors blink/breathe/react beside the path; current node pulses            |
+| Full-bleed scene-change takeovers                    | Duolingo; Spotify Wrapped                                       | Celebrations change the whole background, not just a toast                  |
+| Mastery dots with progress arcs                      | Khan                                                            | Per-topic / per-duel mastery on Learn + Profile                             |
+| No ads, ever                                         | Matiks                                                          | Premium feel = no interruptions (already Candle's stance)                   |
 
 ---
 
@@ -1166,11 +1213,11 @@ These are the patterns the research says make a product look like every other
 dashboard/template. The round-2 redesign must not slip back into any of them.
 
 1. **The ERP/admin dashboard home** — left sidebar + KPI stat-card grid + data
-   tables + chart widgets + "Welcome back" + stats grid. *None* of the six
+   tables + chart widgets + "Welcome back" + stats grid. _None_ of the six
    references uses it; fastest way to look generic. If a screen could manage
    inventory, it's wrong. (Duolingo, Matiks, Spotify, Brilliant, Headspace, Khan)
 2. **Catalogue-grid home** — wall of identical course cards with stock thumbnails.
-   All six lead with *continuation* (resume / queue / today / path), not browsing.
+   All six lead with _continuation_ (resume / queue / today / path), not browsing.
 3. **Multi-accent rainbow UI** — 4–6 saturated colours competing. Each reference
    commits to **one** accent voltage; illustration colours never leak into chrome.
 4. **Default system type + default radii** — Inter/system sans at default sizes,
@@ -1179,25 +1226,25 @@ dashboard/template. The round-2 redesign must not slip back into any of them.
    buttons; Brilliant 9999px pills; Headspace 16/24/32/800; Khan 8px + pills;
    Spotify pill-and-circle).
 5. **Gradient-mesh / glassmorphism backgrounds as art-direction substitute** —
-   the 2023–25 "premium" cliché. Brilliant uses *animated geometry with a
-   story*; Headspace uses *hand-drawn characters*; Khan uses *flat colour
-   fields*; Spotify uses *content-derived* gradients. None uses a generic
+   the 2023–25 "premium" cliché. Brilliant uses _animated geometry with a
+   story_; Headspace uses _hand-drawn characters_; Khan uses _flat colour
+   fields_; Spotify uses _content-derived_ gradients. None uses a generic
    purple-blue mesh.
 6. **Emoji-only gamification / confetti spam** — loud badges, flashing streak
    flames on every tap. Brilliant keeps currencies in a quiet top strip;
-   Headspace has *no* XP; Khan's confetti is tied to real mastery. Shouting
+   Headspace has _no_ XP; Khan's confetti is tied to real mastery. Shouting
    gamification reads as a kids' app, not premium.
 7. **Leaderboard as the home screen** — global rank tables front-and-centre.
    Brilliant buries Leagues behind weekly XP; Khan's competition is team-based
    and opt-in; Headspace has none; Duolingo's league is one tab, not home.
 8. **Mascot as decoration** — a character slapped on generic UI. In all six the
-   character is *functional*: Koji tutors/routes, Khanmigo is the tutor and the
+   character is _functional_: Koji tutors/routes, Khanmigo is the tutor and the
    progress bar, Headspace orbs carry the content's emotion, Duo is the
    emotional layer, Sero is identity + celebration. A mascot with no job is
    clutter.
 9. **Modal-heavy flows and menu trees** — Headspace removed the nav bar; Khan cut
    access from 8 taps to 2. Deep menus and pop-up stacks are the ERP tell.
-10. **Dark-or-light by default without a reason** — each reference *commits* to
+10. **Dark-or-light by default without a reason** — each reference _commits_ to
     one canvas for a reason (Brilliant dark = blackboard/diagram metaphor;
     Headspace cream = storybook; Khan white = paper/workbook; Spotify dark =
     listening at night; Duolingo white = classroom). Candle commits to ink
@@ -1213,7 +1260,7 @@ dashboard/template. The round-2 redesign must not slip back into any of them.
 13. **Muted corporate palette (slate/blue-grey, thin 1px borders, soft blurred
     shadows)** — reads as SaaS, kills game feel. (Duolingo)
 14. **Straight vertical checklist / straight list of lessons** — "A straight
-    list feels like email" — the curved wave *is* the recognisable signature.
+    list feels like email" — the curved wave _is_ the recognisable signature.
     (Duolingo)
 15. **Harsh red error screens / "Wrong!" + buzzer** — punishes the core loop.
     Gentle banner, "Correct solution:", progress still advances. (Duolingo)
@@ -1223,9 +1270,9 @@ dashboard/template. The round-2 redesign must not slip back into any of them.
     what comes next. (Duolingo)
 18. **System-default alerts / modals for celebrations** — feels cheap.
     Full-screen takeover, confetti, character, sound. (Duolingo)
-19. **Copying the *surface* (green + owl + streak) without the system** —
+19. **Copying the _surface_ (green + owl + streak) without the system** —
     cloneable in a weekend, no moat. The moat is the character's emotional range
-    + the habit loop + the owned type/colour language. (Duolingo)
+    - the habit loop + the owned type/colour language. (Duolingo)
 20. **Generic Duolingo-clone gamification** — cartoon mascot lecturing, XP bars
     everywhere, childish rounded-everything, confetti on every tap. Matiks'
     mascot barely speaks and never tutors; its tone is sporty/adult.
@@ -1238,7 +1285,7 @@ dashboard/template. The round-2 redesign must not slip back into any of them.
     school marks. (Matiks)
 23. **Modal/pop-up spam and banner ads for monetisation.** Matiks monetises
     through Pro (insights, reviews, Flex, shield slot) and Pi bundles — purchases
-    that *protect or show off status*, not interruptions. (Matiks)
+    that _protect or show off status_, not interruptions. (Matiks)
 24. **Stock "trophy/coin/star" icon soup with no system behind it.** Matiks' Pi,
     shields, and physical rewards each have exactly one job and one place they
     appear; nothing is decorative-only. (Matiks)
@@ -1266,7 +1313,7 @@ dashboard/template. The round-2 redesign must not slip back into any of them.
     responds on hover-enter in 100–300ms; motion is functional and fast, with
     one loud moment (Wrapped) per year. (Spotify)
 34. **Copying Spotify literally** (green `#1ed760`, SpotifyMix, same layout) —
-    take the *system* (rationed accent, tonal depth, imagery-as-colour, pill
+    take the _system_ (rationed accent, tonal depth, imagery-as-colour, pill
     geometry), not the brand. Candle's gold should be rationed exactly the way
     green is. (Spotify)
 

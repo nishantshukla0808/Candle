@@ -92,11 +92,11 @@ response, in any setting.
 
 **Profile visibility (one main switch):**
 
-| Setting | Who can see the public profile? |
-|---|---|
-| Public (default) | Anyone, including logged-out visitors |
-| Friends only | Only accepted friends (see §4) |
-| Private | Only the owner. Others see "This profile is private." |
+| Setting          | Who can see the public profile?                       |
+| ---------------- | ----------------------------------------------------- |
+| Public (default) | Anyone, including logged-out visitors                 |
+| Friends only     | Only accepted friends (see §4)                        |
+| Private          | Only the owner. Others see "This profile is private." |
 
 A private profile still appears on leaderboards by display name and
 tier only (doc 04 §7), unless the user also hides Ratings (see 1.5).
@@ -105,19 +105,19 @@ so a user can be on a leaderboard without opening their full profile.
 
 ### 1.3 Profile fields
 
-| Field | Type / rule | Public? |
-|---|---|---|
-| Display name | Text, 2–30 chars, letters/numbers/spaces only. Must be unique? No — display names can repeat; the id is the unique key. Bad words blocked. Change: max 1 time per 30 days. | Yes |
-| Avatar | Image only, via existing StorageService (Blueprint §10). Max 2 MB. No external URL. | Yes |
-| Bio | Text, max 160 chars. No links, no phone number, no email. Links are stripped on save. | Yes, if set |
-| Country | ISO code, e.g. `IN`, `US`. Chosen at signup. See 1.6. | Yes (country name + flag, never full address) |
-| Career title | Derived, not typed by the user. See 1.7. | Yes |
-| Joined date | Month + year only, e.g. "Nov 2026". Never the exact time. | Yes |
-| Learning track | Current track + progress %, e.g. Foundations 7/12. | Yes, if the user allows learning progress (see 1.5) |
-| Duel record | Wins / losses / draws per duel type, from the duels module. | Yes, if the user allows duel history |
-| Favourite topic | The topic the user plays best, computed from stats. | Yes |
-| Achievements | Badge list, with date earned. | Yes |
-| Online status | Online / offline only. Never "last seen at 14:32". | Friends only, if enabled |
+| Field           | Type / rule                                                                                                                                                                | Public?                                             |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Display name    | Text, 2–30 chars, letters/numbers/spaces only. Must be unique? No — display names can repeat; the id is the unique key. Bad words blocked. Change: max 1 time per 30 days. | Yes                                                 |
+| Avatar          | Image only, via existing StorageService (Blueprint §10). Max 2 MB. No external URL.                                                                                        | Yes                                                 |
+| Bio             | Text, max 160 chars. No links, no phone number, no email. Links are stripped on save.                                                                                      | Yes, if set                                         |
+| Country         | ISO code, e.g. `IN`, `US`. Chosen at signup. See 1.6.                                                                                                                      | Yes (country name + flag, never full address)       |
+| Career title    | Derived, not typed by the user. See 1.7.                                                                                                                                   | Yes                                                 |
+| Joined date     | Month + year only, e.g. "Nov 2026". Never the exact time.                                                                                                                  | Yes                                                 |
+| Learning track  | Current track + progress %, e.g. Foundations 7/12.                                                                                                                         | Yes, if the user allows learning progress (see 1.5) |
+| Duel record     | Wins / losses / draws per duel type, from the duels module.                                                                                                                | Yes, if the user allows duel history                |
+| Favourite topic | The topic the user plays best, computed from stats.                                                                                                                        | Yes                                                 |
+| Achievements    | Badge list, with date earned.                                                                                                                                              | Yes                                                 |
+| Online status   | Online / offline only. Never "last seen at 14:32".                                                                                                                         | Friends only, if enabled                            |
 
 What is **never** on a profile: email, phone, real name (unless the
 user types it as a display name), password, exact portfolio holdings,
@@ -183,14 +183,14 @@ Career title is derived from the **Candle Rating** (doc 04), not
 typed by the user. It uses the same bands as the Rating tiers, so
 the title and the tier always agree:
 
-| Candle Rating | Career title | Tier |
-|---|---|---|
-| Below 1100 | Intern | Bronze |
-| 1100–1299 | Analyst | Silver |
-| 1300–1499 | Strategist | Gold |
-| 1500–1699 | Risk Manager | Platinum |
-| 1700–1899 | Portfolio Manager | Diamond |
-| 1900 and above | Market Expert | Master |
+| Candle Rating  | Career title      | Tier     |
+| -------------- | ----------------- | -------- |
+| Below 1100     | Intern            | Bronze   |
+| 1100–1299      | Analyst           | Silver   |
+| 1300–1499      | Strategist        | Gold     |
+| 1500–1699      | Risk Manager      | Platinum |
+| 1700–1899      | Portfolio Manager | Diamond  |
+| 1900 and above | Market Expert     | Master   |
 
 XP level (1–10, from total XP) is a separate number. It is shown as
 "Level 4" next to the career title, not instead of it. A user can
@@ -307,22 +307,23 @@ Default: important notifications ON, marketing OFF. Every type has
 its own switch. There is no single "all notifications" switch that
 turns on marketing.
 
-| Notification | Default | Channel |
-|---|---|---|
-| Duel invite from a friend | ON | In-app + push (if allowed) |
-| Duel result / Rating change | ON | In-app |
-| Rematch request | ON | In-app |
-| Friend request | ON | In-app |
-| New message from a friend | ON | In-app + push |
-| Community reply to my post | ON | In-app |
-| Community mention | ON | In-app |
-| Streak reminder (once a day, evening) | ON | Push only |
-| Weekly league result (Monday) | ON | In-app |
-| Season start / season result | ON | In-app |
-| New lesson / new duel type | OFF | In-app |
-| Product news / offers | OFF | Email only, never push |
+| Notification                          | Default | Channel                    |
+| ------------------------------------- | ------- | -------------------------- |
+| Duel invite from a friend             | ON      | In-app + push (if allowed) |
+| Duel result / Rating change           | ON      | In-app                     |
+| Rematch request                       | ON      | In-app                     |
+| Friend request                        | ON      | In-app                     |
+| New message from a friend             | ON      | In-app + push              |
+| Community reply to my post            | ON      | In-app                     |
+| Community mention                     | ON      | In-app                     |
+| Streak reminder (once a day, evening) | ON      | Push only                  |
+| Weekly league result (Monday)         | ON      | In-app                     |
+| Season start / season result          | ON      | In-app                     |
+| New lesson / new duel type            | OFF     | In-app                     |
+| Product news / offers                 | OFF     | Email only, never push     |
 
 Rules:
+
 - Max 1 streak reminder per day, at a time the user picks
   (default 7 pm in their timezone). No reminder after 10 pm.
 - No notification is sent for a blocked user, a muted community,
@@ -456,6 +457,7 @@ It is the same screen for a win and a loss.
 ### 3.2 Exact stats fields and how each is computed
 
 **Header:**
+
 - `result`: WON / LOST / DRAW. For a solo quiz: PASSED / FAILED.
 - `score`: my points vs opponent points, e.g. 5–3. Points per
   question = base 100 + speed bonus (max 50, less the longer you
@@ -468,6 +470,7 @@ It is the same screen for a win and a loss.
   only the reason in plain words.
 
 **Accuracy:**
+
 - `accuracyPct` = correct / total × 100. Example: 5 correct of 7 = 71%.
 - `correctCount`, `wrongCount`, `skippedCount` (no answer in time
   counts as skipped, not wrong).
@@ -490,6 +493,7 @@ only, never their exact answer text if it would reveal a question
 the opponent has not finished in an async duel.
 
 **XP and streak:**
+
 - `xpGained`: total XP from this game, with a breakdown:
   e.g. "Win +20 XP, 5 correct +10 XP, streak day +5 XP = 35 XP".
   XP is read from the XpLedger, never computed in the frontend.
@@ -498,6 +502,7 @@ the opponent has not finished in an async duel.
   today counted as a new streak day).
 
 **Strengths and weaknesses:**
+
 - Strength: any topic with accuracy ≥ 80% and at least 2 questions.
   Shown as "You are strong in Compounding (100%)."
 - Weakness: any topic with accuracy < 50% and at least 2 questions.
@@ -506,6 +511,7 @@ the opponent has not finished in an async duel.
   a weakness. One question is not enough proof.
 
 **What to practise next (the retention hook):**
+
 - One link, not a list of ten: "Practise Risk — Lesson 3, Risk
   Basics (5 min)". The link is the lesson for the weakest topic.
   If there is no weakness, the link is "Try a harder duel" or
@@ -515,6 +521,7 @@ the opponent has not finished in an async duel.
   hidden, never a broken link.
 
 **Trading duel stats (for Paper Trading Sprint / Crisis Duel):**
+
 - `returnPct`: (final equity − starting equity) / starting equity × 100.
 - `indexReturnPct`: the simulated index return for the same period.
 - `outperformancePct`: my return − index return.
@@ -643,8 +650,8 @@ chat with someone who is not a friend, except in a duel chat
   user (rate limit, stops spam).
 - **Duel chat:** a temporary chat inside a duel, for the two players
   only. It opens when the duel starts and closes when the duel ends
-  + 10 minutes. Messages are short (max 200 chars) and are shown
-  on the duel screen. No duel chat in an async duel.
+  - 10 minutes. Messages are short (max 200 chars) and are shown
+    on the duel screen. No duel chat in an async duel.
 - **Online status:** Online / Offline only, from the WebSocket
   presence (see 4.6). Shown in the chat list and on a friend's
   profile, only if that friend allows it (§1.5).
@@ -782,12 +789,12 @@ A post is a point of view, a question, or a lesson learned. Not a tip.
 
 **Post types (v1):**
 
-| Type | What it is | Rules |
-|---|---|---|
-| Text post | Title (max 120 chars) + body (max 2,000 chars) | No links to external sites in v1. No phone/email. |
-| Poll | Question + 2–4 options, 7-day vote | One vote per user. Results shown after voting. No "which stock will go up" polls. |
-| Chart post | A chart image from the simulator only | The image is generated from the user's virtual portfolio, with fictional symbols only. No uploaded chart screenshots in v1, so no real tickers can sneak in. |
-| Question post | A question, tagged with a topic | Same as text, but the UI shows "Question" and the best answer can be marked as helpful by the author. |
+| Type          | What it is                                     | Rules                                                                                                                                                        |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Text post     | Title (max 120 chars) + body (max 2,000 chars) | No links to external sites in v1. No phone/email.                                                                                                            |
+| Poll          | Question + 2–4 options, 7-day vote             | One vote per user. Results shown after voting. No "which stock will go up" polls.                                                                            |
+| Chart post    | A chart image from the simulator only          | The image is generated from the user's virtual portfolio, with fictional symbols only. No uploaded chart screenshots in v1, so no real tickers can sneak in. |
+| Question post | A question, tagged with a topic                | Same as text, but the UI shows "Question" and the best answer can be marked as helpful by the author.                                                        |
 
 **What a post is NOT:** a buy/sell call, a return promise, a
 screenshot of a real broker account, a link to a paid course, or
@@ -847,6 +854,7 @@ and can be appealed (see 5.6).
 ### 5.6 Moderation (automated + human)
 
 **Automated (runs before a post is visible):**
+
 - Banned-word list (abuse, slurs, spam words). Match = post held
   for review, author told "Your post is under review."
 - Link / phone / email detector. Match = post blocked, with the
@@ -861,6 +869,7 @@ and can be appealed (see 5.6).
   per hour. These stop spam without hurting a normal user.
 
 **Human (moderators):**
+
 - Moderators are trusted users (later: paid staff). They see a
   queue: reported posts, held posts, and appeals. They can approve,
   remove, mute, or ban. Every action is logged with who did it
@@ -1000,6 +1009,7 @@ share link → new friend request. Each step is one tap, and no step
 needs a payment.
 
 **What we measure (targets for the first social launch):**
+
 - Post-game screen viewed: > 90% of finished duels.
 - Rematch rate: > 25% of finished duels.
 - Friend request accept rate: > 50%.
@@ -1021,7 +1031,8 @@ is built on a Rating that does not exist yet.
 Extend `users`: bio, country, timezone, language, visibility,
 privacy toggles, career title from XP level only for now
 (Rating title comes in Step B). UI: My profile + public profile
-+ edit screen. This is the foundation every other step reads.
+
+- edit screen. This is the foundation every other step reads.
 
 **Step B — Settings v1 (with Step A).**
 New `settings` module: account, sessions, login history,
@@ -1058,11 +1069,11 @@ community on top of a Rating that does not exist yet.
 ## 9. Definition of Done (per step, no exceptions)
 
 - [ ] Module follows the Blueprint template; no core file edited
-  without an ADR.
+      without an ADR.
 - [ ] DTO validation on every endpoint; invalid input tested.
 - [ ] Standard response envelope on every endpoint.
 - [ ] Auth + RBAC + ownership + privacy checks tested, including
-  negative cases (user A cannot read user B's private data).
+      negative cases (user A cannot read user B's private data).
 - [ ] File handling (avatar, chart image) follows Blueprint §10.
 - [ ] Migration reviewed and applied; transaction boundaries correct.
 - [ ] Unit + integration + e2e tests passing in CI.
@@ -1113,4 +1124,4 @@ show only the last 5 games of each duel type separately — no
 total/full history view. A profile shows, per duel type, the
 last 5 games of that type.
 
-Approved by: Nishu Shukla  Date: 2026-11-12
+Approved by: Nishu Shukla Date: 2026-11-12

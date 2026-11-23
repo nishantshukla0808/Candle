@@ -59,73 +59,73 @@ metrics that replace them with real data.
 
 **A. Hot / write-heavy — these decide whether the database survives**
 
-| Table | Growth driver | Rows / month at 10k / 100k / 1M users | Rows / year at 1M | Main queries |
-|---|---|---|---|---|
-| `DuelAnswer` | 7 answers × 8 duels × MAU | 168k / 1.7M / 17M | ~200M | `WHERE duelId = ? AND userId = ?` (live grading, settlement); `WHERE questionId = ?` (pilot calibration) |
-| `DuelGameResult` | 1 row per player per duel | 24k / 240k / 2.4M | ~29M | `WHERE userId = ? ORDER BY createdAt DESC` (history, last-5-per-type, doc 06); `WHERE duelId = ?` (result page) |
-| `XpLedger` | ~30 XP events × MAU | 90k / 900k / 9M | ~108M | `WHERE userId = ? ORDER BY createdAt DESC` (ledger view, replay); unique `idempotencyKey` |
-| `RatingHistory` | 5 rated events × MAU | 15k / 150k / 1.5M | ~18M | `WHERE userId = ? AND kind = ? ORDER BY createdAt DESC` (explain my Rating); unique `(userId, eventId)` |
-| `SimOrder` | 8 orders × MAU | 24k / 240k / 2.4M | ~29M | `WHERE portfolioId = ? ORDER BY createdAt DESC` (order history) |
-| `UserQuestionExposure` | 50 newly-seen items × MAU, capped by bank size | 150k / 1.5M / 15M new rows/mo until the cap bites | capped (see §1.3) | `WHERE userId = ? AND lastSeenAt > now-30d` (selection exclusion) |
-| `QuizAttempt` + `AttemptAnswer` | 3 quizzes × MAU; ~10 answers each | 9k + 90k / 90k + 900k / 900k + 9M | ~11M answers | `WHERE userId = ?`, `WHERE attemptId = ?` |
-| `AuditLog` | every admin/content action | small at first, grows with moderators | — | `WHERE entityType = ? AND entityId = ?`, `WHERE actorId = ?` |
-| `OutboxEvent` | every cross-service event | ~1 per duel settle + rating change | — | `WHERE processedAt IS NULL ORDER BY createdAt` (relay) |
+| Table                           | Growth driver                                  | Rows / month at 10k / 100k / 1M users             | Rows / year at 1M | Main queries                                                                                                    |
+| ------------------------------- | ---------------------------------------------- | ------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| `DuelAnswer`                    | 7 answers × 8 duels × MAU                      | 168k / 1.7M / 17M                                 | ~200M             | `WHERE duelId = ? AND userId = ?` (live grading, settlement); `WHERE questionId = ?` (pilot calibration)        |
+| `DuelGameResult`                | 1 row per player per duel                      | 24k / 240k / 2.4M                                 | ~29M              | `WHERE userId = ? ORDER BY createdAt DESC` (history, last-5-per-type, doc 06); `WHERE duelId = ?` (result page) |
+| `XpLedger`                      | ~30 XP events × MAU                            | 90k / 900k / 9M                                   | ~108M             | `WHERE userId = ? ORDER BY createdAt DESC` (ledger view, replay); unique `idempotencyKey`                       |
+| `RatingHistory`                 | 5 rated events × MAU                           | 15k / 150k / 1.5M                                 | ~18M              | `WHERE userId = ? AND kind = ? ORDER BY createdAt DESC` (explain my Rating); unique `(userId, eventId)`         |
+| `SimOrder`                      | 8 orders × MAU                                 | 24k / 240k / 2.4M                                 | ~29M              | `WHERE portfolioId = ? ORDER BY createdAt DESC` (order history)                                                 |
+| `UserQuestionExposure`          | 50 newly-seen items × MAU, capped by bank size | 150k / 1.5M / 15M new rows/mo until the cap bites | capped (see §1.3) | `WHERE userId = ? AND lastSeenAt > now-30d` (selection exclusion)                                               |
+| `QuizAttempt` + `AttemptAnswer` | 3 quizzes × MAU; ~10 answers each              | 9k + 90k / 90k + 900k / 900k + 9M                 | ~11M answers      | `WHERE userId = ?`, `WHERE attemptId = ?`                                                                       |
+| `AuditLog`                      | every admin/content action                     | small at first, grows with moderators             | —                 | `WHERE entityType = ? AND entityId = ?`, `WHERE actorId = ?`                                                    |
+| `OutboxEvent`                   | every cross-service event                      | ~1 per duel settle + rating change                | —                 | `WHERE processedAt IS NULL ORDER BY createdAt` (relay)                                                          |
 
 **B. Cold / read-heavy — big in rows, small in writes, served from
 cache or a replica**
 
-| Table | Growth driver | Rows at 1M users | Main queries |
-|---|---|---|---|
-| `DuelBankItem` + `DuelBankOption` | content, not users | 2,000 at launch → 20,000+ mature (+ ~4 options each) | `WHERE status = LIVE AND topic = ? AND difficulty = ?` (selection, §2.1); read-heavy, tiny write rate |
-| `Lesson` / `LessonVersion` / `Question` / `QuestionOption` | content | hundreds | `WHERE lessonVersionId = ?`, `WHERE lessonId = ? AND status = PUBLISHED` |
-| `AssessmentVersion` / `AssessmentQuestion` / `AssessmentOption` | content | tens per version | `WHERE versionId = ?` |
-| `Track` / `LearningModule` | content | tens | `WHERE trackId = ? ORDER BY "order"` |
-| `SimInstrument` | content | 6 (fictional tickers) | `WHERE active = true` — fits in memory, cache it |
-| `Badge` | content | tens | `WHERE slug = ?` |
-| `DuelDailySet` | 1 row per day | 365 / year | `WHERE date = ?` (unique) |
-| `DuelBankTemplate` | content | tens | `WHERE key = ?` |
+| Table                                                           | Growth driver      | Rows at 1M users                                     | Main queries                                                                                          |
+| --------------------------------------------------------------- | ------------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `DuelBankItem` + `DuelBankOption`                               | content, not users | 2,000 at launch → 20,000+ mature (+ ~4 options each) | `WHERE status = LIVE AND topic = ? AND difficulty = ?` (selection, §2.1); read-heavy, tiny write rate |
+| `Lesson` / `LessonVersion` / `Question` / `QuestionOption`      | content            | hundreds                                             | `WHERE lessonVersionId = ?`, `WHERE lessonId = ? AND status = PUBLISHED`                              |
+| `AssessmentVersion` / `AssessmentQuestion` / `AssessmentOption` | content            | tens per version                                     | `WHERE versionId = ?`                                                                                 |
+| `Track` / `LearningModule`                                      | content            | tens                                                 | `WHERE trackId = ? ORDER BY "order"`                                                                  |
+| `SimInstrument`                                                 | content            | 6 (fictional tickers)                                | `WHERE active = true` — fits in memory, cache it                                                      |
+| `Badge`                                                         | content            | tens                                                 | `WHERE slug = ?`                                                                                      |
+| `DuelDailySet`                                                  | 1 row per day      | 365 / year                                           | `WHERE date = ?` (unique)                                                                             |
+| `DuelBankTemplate`                                              | content            | tens                                                 | `WHERE key = ?`                                                                                       |
 
 **C. Small / one-row-per-user — never the scaling problem, but
 the most-joined tables (so they must stay fast)**
 
-| Table | Rows at 1M users | Notes |
-|---|---|---|
-| `User` | 1M | `email` unique; every user-owned query starts here |
-| `UserStats` | 1M (1:1) | denormalised counters — see §3, hot counters move to Redis first |
-| `UserRating` | 2M (2 kinds × user) | `(kind, rating)` index feeds leaderboard rebuilds |
-| `UserKnowledgeProfile` | 1M (1:1) | rewritten per assessment, not appended |
-| `SimPortfolio` | 1M (1:1, lazy) | row-locked on every trade — see §6 |
-| `SimHolding` | ≤ 6M (≤6 instruments × user) | composite PK `(portfolioId, instrumentId)` |
-| `UserLessonProgress` | users × lessons (≤ ~200 lessons) | composite PK `(userId, lessonId)`; bounded |
-| `LessonCompletion` | users × lessons completed | unique `(userId, lessonId)` |
-| `UserBadge` | users × badges earned | composite PK `(userId, badgeId)` |
-| `RefreshToken` | ~2–3 per user | indexed by `userId`, `familyId`; expired rows must be pruned |
-| `EmailToken` | transient | expired rows must be pruned |
-| `IdempotencyRecord` | transient (TTL'd) | `expiresAt` index exists — prune by it, see §2.4 |
-| `PlacementWaiver` | ≤ users × tracks | composite PK `(userId, trackId)` |
-| `AssessmentAttempt` / `AssessmentResult` | ~1–3 per user | 1 official attempt + retakes (max 3, 7-day cooldown) |
+| Table                                    | Rows at 1M users                 | Notes                                                            |
+| ---------------------------------------- | -------------------------------- | ---------------------------------------------------------------- |
+| `User`                                   | 1M                               | `email` unique; every user-owned query starts here               |
+| `UserStats`                              | 1M (1:1)                         | denormalised counters — see §3, hot counters move to Redis first |
+| `UserRating`                             | 2M (2 kinds × user)              | `(kind, rating)` index feeds leaderboard rebuilds                |
+| `UserKnowledgeProfile`                   | 1M (1:1)                         | rewritten per assessment, not appended                           |
+| `SimPortfolio`                           | 1M (1:1, lazy)                   | row-locked on every trade — see §6                               |
+| `SimHolding`                             | ≤ 6M (≤6 instruments × user)     | composite PK `(portfolioId, instrumentId)`                       |
+| `UserLessonProgress`                     | users × lessons (≤ ~200 lessons) | composite PK `(userId, lessonId)`; bounded                       |
+| `LessonCompletion`                       | users × lessons completed        | unique `(userId, lessonId)`                                      |
+| `UserBadge`                              | users × badges earned            | composite PK `(userId, badgeId)`                                 |
+| `RefreshToken`                           | ~2–3 per user                    | indexed by `userId`, `familyId`; expired rows must be pruned     |
+| `EmailToken`                             | transient                        | expired rows must be pruned                                      |
+| `IdempotencyRecord`                      | transient (TTL'd)                | `expiresAt` index exists — prune by it, see §2.4                 |
+| `PlacementWaiver`                        | ≤ users × tracks                 | composite PK `(userId, trackId)`                                 |
+| `AssessmentAttempt` / `AssessmentResult` | ~1–3 per user                    | 1 official attempt + retakes (max 3, 7-day cooldown)             |
 
 **D. Future tables (doc 06 — designed, not built yet). Their
 growth is estimated here so the schema is not a surprise later.**
 
-| Future table | Growth driver | Rows / month at 1M users | Main queries |
-|---|---|---|---|
-| `ChatMessage` | 20% of MAU × 30 msg | 1.8M | `WHERE chatId = ? ORDER BY createdAt DESC` (cursor pagination); `chatId = "dm:{smaller}:{larger}"` |
-| `Friendship` | 2 rows per accepted friend pair | small | `WHERE userId = ? AND status = ACCEPTED` |
-| `Follow` | follows | small | `WHERE followerId = ?` / `WHERE followingId = ?` |
-| `ChatRead` | 1 row per (chat, user) | small | `WHERE chatId = ? AND userId = ?` |
-| `Community` | admin-seeded | 6 at launch | `WHERE slug = ?` |
-| `CommunityMember` | joins | small | `WHERE communityId = ? AND userId = ?` |
-| `CommunityPost` | 5% of MAU × 2 | 30k | `WHERE communityId = ? ORDER BY createdAt DESC` (New feed); feed ranking (§5.4 of doc 06) |
-| `PostVote` | votes | ~10× posts | unique `(postId, userId)`; `WHERE postId = ?` for score |
-| `PostComment` | 5% of MAU × 10 | 150k | `WHERE postId = ? ORDER BY createdAt` |
-| `PollVote` | votes | ~posts | unique `(postId, userId)` |
-| `PostReport` | reports | small | moderation queue `WHERE status = OPEN ORDER BY createdAt` |
-| `SavedPost` | saves | small | unique `(userId, postId)` |
-| `UserPrivacySettings` / `UserSettings` | 1 row per user | 1M each | `WHERE userId = ?` (every profile/settings read) |
-| `NotificationPreference` | ~12 types × user | 12M at 1M users | `WHERE userId = ? AND type = ?` |
-| `LoginEvent` | logins | ~2–4M / month | `WHERE userId = ? ORDER BY createdAt DESC LIMIT 20`, 90-day retention |
-| `BlockedUser` | blocks | small | unique `(blockerId, blockedId)` |
+| Future table                           | Growth driver                   | Rows / month at 1M users | Main queries                                                                                       |
+| -------------------------------------- | ------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `ChatMessage`                          | 20% of MAU × 30 msg             | 1.8M                     | `WHERE chatId = ? ORDER BY createdAt DESC` (cursor pagination); `chatId = "dm:{smaller}:{larger}"` |
+| `Friendship`                           | 2 rows per accepted friend pair | small                    | `WHERE userId = ? AND status = ACCEPTED`                                                           |
+| `Follow`                               | follows                         | small                    | `WHERE followerId = ?` / `WHERE followingId = ?`                                                   |
+| `ChatRead`                             | 1 row per (chat, user)          | small                    | `WHERE chatId = ? AND userId = ?`                                                                  |
+| `Community`                            | admin-seeded                    | 6 at launch              | `WHERE slug = ?`                                                                                   |
+| `CommunityMember`                      | joins                           | small                    | `WHERE communityId = ? AND userId = ?`                                                             |
+| `CommunityPost`                        | 5% of MAU × 2                   | 30k                      | `WHERE communityId = ? ORDER BY createdAt DESC` (New feed); feed ranking (§5.4 of doc 06)          |
+| `PostVote`                             | votes                           | ~10× posts               | unique `(postId, userId)`; `WHERE postId = ?` for score                                            |
+| `PostComment`                          | 5% of MAU × 10                  | 150k                     | `WHERE postId = ? ORDER BY createdAt`                                                              |
+| `PollVote`                             | votes                           | ~posts                   | unique `(postId, userId)`                                                                          |
+| `PostReport`                           | reports                         | small                    | moderation queue `WHERE status = OPEN ORDER BY createdAt`                                          |
+| `SavedPost`                            | saves                           | small                    | unique `(userId, postId)`                                                                          |
+| `UserPrivacySettings` / `UserSettings` | 1 row per user                  | 1M each                  | `WHERE userId = ?` (every profile/settings read)                                                   |
+| `NotificationPreference`               | ~12 types × user                | 12M at 1M users          | `WHERE userId = ? AND type = ?`                                                                    |
+| `LoginEvent`                           | logins                          | ~2–4M / month            | `WHERE userId = ? ORDER BY createdAt DESC LIMIT 20`, 90-day retention                              |
+| `BlockedUser`                          | blocks                          | small                    | unique `(blockerId, blockedId)`                                                                    |
 
 ### 1.2 The ranking: what gets big first
 
@@ -137,7 +137,7 @@ At 1M registered users, in order of yearly row growth:
    never deleted in v1. The second-biggest table — and the one
    most likely to be forgotten until it is 100 GB.
 3. **`DuelGameResult` — ~29M rows/year, but ~230 GB/year of
-   storage** at ~8 KB per row. The biggest table by *bytes*, not
+   storage** at ~8 KB per row. The biggest table by _bytes_, not
    rows, because `perQuestion` JSON duplicates stems, options,
    and explanations for every question of every duel.
 4. **`SimOrder` — ~29M rows/year.** Steady, predictable, one
@@ -169,7 +169,7 @@ the bank size.** At a 2,000-item bank, one heavy user can hold
 2,000 exposure rows; at a 20,000-item mature bank, 20,000 rows.
 At 300,000 monthly active users that is a theoretical 600M–6B
 rows — except the 30-day rule makes most of them reusable, so
-the *live* set per user is only the items seen in the last 30
+the _live_ set per user is only the items seen in the last 30
 days (about 50–150 rows). The table must therefore be pruned
 by age (§2.4), and exhausted items (seen 3 times, rested
 forever) must move out of this table into a compact form (§2.4,
@@ -212,24 +212,24 @@ is slower than `DuelAnswer` with 3.
 
 **Add now (Phase A, each with a named query it serves):**
 
-| Index | Serves |
-|---|---|
-| `DuelAnswer (questionId, createdAt)` | pilot calibration: "who answered this item, and how did they do?" — today this is a full scan |
-| `XpLedger (userId, createdAt DESC)` | ledger history pages; today only `(userId)` exists, so ordering is a sort |
-| `QuizAttempt (userId, createdAt DESC)` | "my recent quizzes" |
-| `SimPortfolio (userId)` | already unique on `userId` — verify, do not duplicate |
-| `AuditLog (createdAt DESC)` | admin "recent actions" — today only `(entityType, entityId)` and `(actorId)` exist |
-| `OutboxEvent (processedAt, createdAt)` | already exists — verify the relay uses it, and that `processedAt IS NULL` is the hot path |
-| `Duel (winnerId, createdAt)` — only if a "duels I won" query is added; do not add speculatively | — |
-| Future `ChatMessage (chatId, createdAt DESC)` | chat history, cursor pagination (§2.3) |
-| Future `CommunityPost (communityId, createdAt DESC)` and `(communityId, score)` | New feed and Top feed |
-| Future `PostComment (postId, createdAt)` | comment threads |
-| Future `LoginEvent (userId, createdAt DESC)` | last-20-logins, 90-day retention |
+| Index                                                                                           | Serves                                                                                        |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `DuelAnswer (questionId, createdAt)`                                                            | pilot calibration: "who answered this item, and how did they do?" — today this is a full scan |
+| `XpLedger (userId, createdAt DESC)`                                                             | ledger history pages; today only `(userId)` exists, so ordering is a sort                     |
+| `QuizAttempt (userId, createdAt DESC)`                                                          | "my recent quizzes"                                                                           |
+| `SimPortfolio (userId)`                                                                         | already unique on `userId` — verify, do not duplicate                                         |
+| `AuditLog (createdAt DESC)`                                                                     | admin "recent actions" — today only `(entityType, entityId)` and `(actorId)` exist            |
+| `OutboxEvent (processedAt, createdAt)`                                                          | already exists — verify the relay uses it, and that `processedAt IS NULL` is the hot path     |
+| `Duel (winnerId, createdAt)` — only if a "duels I won" query is added; do not add speculatively | —                                                                                             |
+| Future `ChatMessage (chatId, createdAt DESC)`                                                   | chat history, cursor pagination (§2.3)                                                        |
+| Future `CommunityPost (communityId, createdAt DESC)` and `(communityId, score)`                 | New feed and Top feed                                                                         |
+| Future `PostComment (postId, createdAt)`                                                        | comment threads                                                                               |
+| Future `LoginEvent (userId, createdAt DESC)`                                                    | last-20-logins, 90-day retention                                                              |
 
 **Do not add:** single-column indexes on every foreign key
 "just in case" (each one is paid for on every insert into a hot
 table); indexes on low-cardinality columns alone (`status`,
-`type` — only as the *first* column of a composite that matches
+`type` — only as the _first_ column of a composite that matches
 a real query); expression indexes before a slow query proves
 they are needed.
 
@@ -245,7 +245,7 @@ Reason: partitioning a table that has 100,000 rows buys nothing
 and costs a migration, a primary-key change, and Prisma friction
 (§8.3). Indexes serve every query in §1 until a hot table passes
 ~10M rows (§3 triggers). The one exception is a table whose
-*deletion* pattern is time-based: if a table is pruned by age,
+_deletion_ pattern is time-based: if a table is pruned by age,
 partitioning by month turns a slow `DELETE … WHERE createdAt < …`
 (which locks and bloats) into a fast `DROP TABLE` of a whole
 month. That is the real reason to partition — cheap deletion,
@@ -262,17 +262,18 @@ back a user pages, which is exactly what duel history and chat
 do.
 
 **Rule (Phase A, enforce in code review):**
+
 - Hot tables (`DuelGameResult`, `DuelAnswer`, `XpLedger`,
   `RatingHistory`, `SimOrder`, future `ChatMessage`,
   `CommunityPost`): **keyset (cursor) pagination only** —
   `WHERE (createdAt, id) < (cursorCreatedAt, cursorId)
-  ORDER BY createdAt DESC, id DESC LIMIT 20`.
+ORDER BY createdAt DESC, id DESC LIMIT 20`.
   The cursor is an opaque token, never a page number.
 - Small tables (content, settings, friends list): offset
   pagination is acceptable, capped at 100 per page.
 - The doc 06 last-5-per-type rule makes this cheap: duel
   history is `WHERE userId = ? AND type = ? ORDER BY
-  createdAt DESC LIMIT 5` — a single index lookup, no
+createdAt DESC LIMIT 5` — a single index lookup, no
   pagination at all. The full-history endpoint must not exist
   just because the table has the rows.
 
@@ -281,25 +282,25 @@ do.
 Every hot table gets a written retention rule. "Keep everything
 forever" is not a rule — it is a disk purchase plan.
 
-| Table | Hot window | After the window | Enforcement |
-|---|---|---|---|
-| `DuelGameResult` | 90 days (full row, incl. `perQuestion`) | Move `perQuestion` JSON to cold archive (S3-compatible object storage, keyed by `duelId:userId`); keep a slim hot row: `duelId, userId, type, result, score, correct, accuracy, ratingDelta, xpAwarded, createdAt` | Nightly job; the result page reads hot first, archive on demand |
-| `DuelAnswer` | 90 days in hot table | Archive to cold storage (one file per month, Parquet/JSONL); keep the aggregate counts (`correctRate`, `pilotAnswers`) on `DuelBankItem` — the calibration data, not the raw rows | Monthly job; disputes after 90 days replay from archive |
-| `RatingHistory` | Keep 2 years hot | Archive older rows to cold storage; never delete the audit trail, only move it | Yearly job; replay-from-history must know to read the archive |
-| `XpLedger` | 90 days hot | Archive; `UserStats.totalXp` is the balance of record | Monthly job |
-| `UserQuestionExposure` | 30-day window is live; rows older than 90 days with `seenCount < 3` are **deleted** (the item is reusable anyway) | Rows with `seenCount = 3` (rested forever) move to a compact rested set: one Redis set per user, `rested:{userId}`, members = item ids — a set lookup, not a row per item. If Redis is lost, the rested set is rebuilt from the archive, and the worst case is one repeated question, not data loss | Weekly job |
-| `SimOrder` | 1 year hot | Archive older orders; portfolio value is derived from `SimHolding` + current prices, not from replaying orders | Yearly job |
-| `QuizAttempt` / `AttemptAnswer` | 1 year hot | Archive; `LessonCompletion` is the durable record | Yearly job |
-| `AuditLog` | 1 year hot | Archive; admin audit is a legal record, never hard-deleted without a decision | Yearly job |
-| `OutboxEvent` | 7 days after `processedAt` | Delete processed rows older than 7 days; unprocessed rows older than 24h alert (§7) | Daily job |
-| `IdempotencyRecord` | Until `expiresAt` | Delete by `expiresAt` (index exists) | Daily job |
-| `RefreshToken` / `EmailToken` | Until expiry/revocation | Delete expired rows | Daily job |
-| Future `ChatMessage` | 1 year after last message in the chat (doc 06 §2.6) | Archive, then delete; reported messages kept until the report closes | Monthly job |
-| Future `LoginEvent` | 90 days (doc 06 §2.2) | Delete | Daily job |
-| Future `CommunityPost` (deleted) | 30 days for appeal (doc 06 §2.6) | Hard-delete after 30 days | Daily job |
+| Table                            | Hot window                                                                                                        | After the window                                                                                                                                                                                                                                                                                    | Enforcement                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `DuelGameResult`                 | 90 days (full row, incl. `perQuestion`)                                                                           | Move `perQuestion` JSON to cold archive (S3-compatible object storage, keyed by `duelId:userId`); keep a slim hot row: `duelId, userId, type, result, score, correct, accuracy, ratingDelta, xpAwarded, createdAt`                                                                                  | Nightly job; the result page reads hot first, archive on demand |
+| `DuelAnswer`                     | 90 days in hot table                                                                                              | Archive to cold storage (one file per month, Parquet/JSONL); keep the aggregate counts (`correctRate`, `pilotAnswers`) on `DuelBankItem` — the calibration data, not the raw rows                                                                                                                   | Monthly job; disputes after 90 days replay from archive         |
+| `RatingHistory`                  | Keep 2 years hot                                                                                                  | Archive older rows to cold storage; never delete the audit trail, only move it                                                                                                                                                                                                                      | Yearly job; replay-from-history must know to read the archive   |
+| `XpLedger`                       | 90 days hot                                                                                                       | Archive; `UserStats.totalXp` is the balance of record                                                                                                                                                                                                                                               | Monthly job                                                     |
+| `UserQuestionExposure`           | 30-day window is live; rows older than 90 days with `seenCount < 3` are **deleted** (the item is reusable anyway) | Rows with `seenCount = 3` (rested forever) move to a compact rested set: one Redis set per user, `rested:{userId}`, members = item ids — a set lookup, not a row per item. If Redis is lost, the rested set is rebuilt from the archive, and the worst case is one repeated question, not data loss | Weekly job                                                      |
+| `SimOrder`                       | 1 year hot                                                                                                        | Archive older orders; portfolio value is derived from `SimHolding` + current prices, not from replaying orders                                                                                                                                                                                      | Yearly job                                                      |
+| `QuizAttempt` / `AttemptAnswer`  | 1 year hot                                                                                                        | Archive; `LessonCompletion` is the durable record                                                                                                                                                                                                                                                   | Yearly job                                                      |
+| `AuditLog`                       | 1 year hot                                                                                                        | Archive; admin audit is a legal record, never hard-deleted without a decision                                                                                                                                                                                                                       | Yearly job                                                      |
+| `OutboxEvent`                    | 7 days after `processedAt`                                                                                        | Delete processed rows older than 7 days; unprocessed rows older than 24h alert (§7)                                                                                                                                                                                                                 | Daily job                                                       |
+| `IdempotencyRecord`              | Until `expiresAt`                                                                                                 | Delete by `expiresAt` (index exists)                                                                                                                                                                                                                                                                | Daily job                                                       |
+| `RefreshToken` / `EmailToken`    | Until expiry/revocation                                                                                           | Delete expired rows                                                                                                                                                                                                                                                                                 | Daily job                                                       |
+| Future `ChatMessage`             | 1 year after last message in the chat (doc 06 §2.6)                                                               | Archive, then delete; reported messages kept until the report closes                                                                                                                                                                                                                                | Monthly job                                                     |
+| Future `LoginEvent`              | 90 days (doc 06 §2.2)                                                                                             | Delete                                                                                                                                                                                                                                                                                              | Daily job                                                       |
+| Future `CommunityPost` (deleted) | 30 days for appeal (doc 06 §2.6)                                                                                  | Hard-delete after 30 days                                                                                                                                                                                                                                                                           | Daily job                                                       |
 
 **Archival is not deletion.** Every archive job writes to cold
-storage *first*, verifies the write (row count + checksum),
+storage _first_, verifies the write (row count + checksum),
 and only then deletes from Postgres. A job that deletes before
 verifying is a data-loss bug, not an optimisation.
 
@@ -311,7 +312,7 @@ teeth:
 - Repositories batch with `include`/`select` deliberately.
   A duel result page must not issue one query per question to
   fetch stems — `DuelGameResult.perQuestion` already carries
-  them, which is *why* the JSON is denormalised (and why it is
+  them, which is _why_ the JSON is denormalised (and why it is
   expensive, §1.3 — the trade-off is explicit, not accidental).
 - Leaderboard top-100 comes from **one** Redis `ZREVRANGE`,
   never one query per user to fetch display names — display
@@ -375,13 +376,14 @@ Each phase has a **numeric trigger**. When the trigger fires,
 the phase starts. Until it fires, the phase does not start —
 "we might need it" is not a trigger.
 
-| Phase | What changes | Trigger (any one fires it) | What it buys |
-|---|---|---|---|
-| **A — now** | Indexes (§2.1), cursor pagination (§2.3), retention jobs (§2.4), N+1 gate (§2.5) | Already triggered — this is v1 | Headroom to ~10M rows per hot table |
-| **B — partition + replicas** | Monthly RANGE partitions on hot tables (§3.1); 1–2 read replicas; PgBouncer; hot counters to Redis (§3.2); leaderboard denormalisation (§3.3); UUIDv7 for new hot tables (§2.6) | Any hot table > **10M rows** OR > **50 GB** OR p95 read latency > **300 ms** for 7 days OR primary CPU > **70%** sustained for 7 days OR write rate > **1,000 rows/s** sustained | Headroom to ~100M rows per hot table; reads scale horizontally; old months drop in seconds |
-| **C — shard** | Application-level sharding by the keys in §4; Citus as the fallback (§4.5) | Single primary write rate > **5,000 rows/s** sustained OR any hot table > **100M rows** OR > **500 GB** OR vertical scaling exhausted (largest practical VPS) OR a single table's index no longer fits in RAM | Writes scale horizontally; no single primary is a bottleneck |
+| Phase                        | What changes                                                                                                                                                                    | Trigger (any one fires it)                                                                                                                                                                                    | What it buys                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **A — now**                  | Indexes (§2.1), cursor pagination (§2.3), retention jobs (§2.4), N+1 gate (§2.5)                                                                                                | Already triggered — this is v1                                                                                                                                                                                | Headroom to ~10M rows per hot table                                                        |
+| **B — partition + replicas** | Monthly RANGE partitions on hot tables (§3.1); 1–2 read replicas; PgBouncer; hot counters to Redis (§3.2); leaderboard denormalisation (§3.3); UUIDv7 for new hot tables (§2.6) | Any hot table > **10M rows** OR > **50 GB** OR p95 read latency > **300 ms** for 7 days OR primary CPU > **70%** sustained for 7 days OR write rate > **1,000 rows/s** sustained                              | Headroom to ~100M rows per hot table; reads scale horizontally; old months drop in seconds |
+| **C — shard**                | Application-level sharding by the keys in §4; Citus as the fallback (§4.5)                                                                                                      | Single primary write rate > **5,000 rows/s** sustained OR any hot table > **100M rows** OR > **500 GB** OR vertical scaling exhausted (largest practical VPS) OR a single table's index no longer fits in RAM | Writes scale horizontally; no single primary is a bottleneck                               |
 
 **Read replicas — the details:**
+
 - Replicas serve: leaderboards (top-100 rebuilds), duel history,
   community feeds, admin analytics, calibration queries. They
   never serve: Rating updates, simulator trades, duel settlement,
@@ -389,7 +391,7 @@ the phase starts. Until it fires, the phase does not start —
   finished a duel must see their new Rating from the primary —
   replication lag of even 1 second is a visible bug here).
 - **Rule:** every repository method declares `readFromReplica:
-  true | false`. Default is `false` (primary). A method may opt
+true | false`. Default is `false` (primary). A method may opt
   into the replica only if stale data is acceptable for that
   read. This is a code-level decision per query, not a config
   flag that flips all reads at once.
@@ -403,16 +405,16 @@ Partition by **month of `createdAt`** (`RANGE` on a `createdAt`
 month key). Monthly, not daily (too many partitions to manage)
 and not yearly (a year partition is too big to drop cheaply).
 
-| Table | Partition key | Why monthly works |
-|---|---|---|
-| `DuelAnswer` | `createdAt` | Retention is 90 days (§2.4) — dropping 3 old months is one `DROP TABLE` each |
-| `RatingHistory` | `createdAt` | 2-year hot window — 24 partitions, drop the oldest |
-| `XpLedger` | `createdAt` | 90-day hot window |
-| `SimOrder` | `createdAt` | 1-year hot window |
-| `AuditLog` | `createdAt` | 1-year hot window |
-| `OutboxEvent` | `createdAt` | 7-day window — weekly partitions are fine here |
-| Future `ChatMessage` | `createdAt` | 1-year window, but see §4 — chat is sharded by `chatId` in Phase C, and partitioning is per-shard then |
-| Future `LoginEvent` | `createdAt` | 90-day window |
+| Table                | Partition key | Why monthly works                                                                                      |
+| -------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| `DuelAnswer`         | `createdAt`   | Retention is 90 days (§2.4) — dropping 3 old months is one `DROP TABLE` each                           |
+| `RatingHistory`      | `createdAt`   | 2-year hot window — 24 partitions, drop the oldest                                                     |
+| `XpLedger`           | `createdAt`   | 90-day hot window                                                                                      |
+| `SimOrder`           | `createdAt`   | 1-year hot window                                                                                      |
+| `AuditLog`           | `createdAt`   | 1-year hot window                                                                                      |
+| `OutboxEvent`        | `createdAt`   | 7-day window — weekly partitions are fine here                                                         |
+| Future `ChatMessage` | `createdAt`   | 1-year window, but see §4 — chat is sharded by `chatId` in Phase C, and partitioning is per-shard then |
+| Future `LoginEvent`  | `createdAt`   | 90-day window                                                                                          |
 
 **Prisma implication (decide now, pay later):** native
 partitioned tables require the primary key to include the
@@ -439,8 +441,8 @@ Postgres on every duel answer is a row-lock contention point
 **Rule:** counters live in Redis (`INCR` / `HINCRBY`) during
 play, and are flushed to Postgres periodically (every 5 minutes,
 and on duel settlement). Postgres remains the source of truth
-for the *flushed* value; Redis is the source of truth for the
-*last 5 minutes*. If Redis is lost, counters are rebuilt from
+for the _flushed_ value; Redis is the source of truth for the
+_last 5 minutes_. If Redis is lost, counters are rebuilt from
 Postgres + a replay of recent events (§5) — the counters are
 recomputed, never guessed.
 
@@ -507,24 +509,24 @@ because Candle's data has **three different natural keys**:
 - **Chat data** shards by `chatId` (`ChatMessage`, `ChatRead`):
   `chatId = "dm:{smallerUserId}:{largerUserId}"`, so both
   participants' messages for one chat live on one shard. A
-  user's chat *list* (all their chats) is a scatter-gather
+  user's chat _list_ (all their chats) is a scatter-gather
   query — or, better, a per-user chat-list summary kept on the
   user's shard (§4.4).
 
 **Shard-key table (the decision, in one place):**
 
-| Table / group | Shard key | Shard count driver |
-|---|---|---|
-| `User`, `UserStats`, `UserRating`, `UserKnowledgeProfile`, `UserPrivacySettings`, `UserSettings` | `userId` | 1 row per user |
-| `XpLedger`, `RatingHistory`, `QuizAttempt`, `AttemptAnswer`, `AssessmentAttempt`, `AssessmentAnswer`, `UserLessonProgress`, `LessonCompletion`, `UserBadge`, `UserQuestionExposure` | `userId` | per-user event volume |
-| `SimPortfolio`, `SimHolding`, `SimOrder` | `userId` (via portfolio) | per-user trade volume |
-| `Duel`, `DuelAnswer`, `DuelGameResult` | `duelId` | per-duel volume |
-| `DuelDailySet` | not sharded (1/day) | tiny |
-| `DuelBankItem`, `DuelBankOption`, `DuelBankTemplate`, `Lesson*`, `Question*`, `Track`, `SimInstrument`, `Badge` | replicated (reference data) | content size |
-| `ChatMessage`, `ChatRead` | `chatId` | per-chat volume |
-| `Friendship`, `Follow`, `BlockedUser` | `userId` (requester side; friendship rows exist in both directions, doc 06 §4.7) | per-user social graph |
-| `CommunityPost`, `PostComment`, `PostVote`, `PollVote`, `PostReport`, `SavedPost` | `communityId` (posts/comments/votes) / `userId` (saved posts) | per-community volume |
-| `AuditLog`, `OutboxEvent`, `IdempotencyRecord` | not sharded by user — see §4.4 | operational |
+| Table / group                                                                                                                                                                       | Shard key                                                                        | Shard count driver    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------- |
+| `User`, `UserStats`, `UserRating`, `UserKnowledgeProfile`, `UserPrivacySettings`, `UserSettings`                                                                                    | `userId`                                                                         | 1 row per user        |
+| `XpLedger`, `RatingHistory`, `QuizAttempt`, `AttemptAnswer`, `AssessmentAttempt`, `AssessmentAnswer`, `UserLessonProgress`, `LessonCompletion`, `UserBadge`, `UserQuestionExposure` | `userId`                                                                         | per-user event volume |
+| `SimPortfolio`, `SimHolding`, `SimOrder`                                                                                                                                            | `userId` (via portfolio)                                                         | per-user trade volume |
+| `Duel`, `DuelAnswer`, `DuelGameResult`                                                                                                                                              | `duelId`                                                                         | per-duel volume       |
+| `DuelDailySet`                                                                                                                                                                      | not sharded (1/day)                                                              | tiny                  |
+| `DuelBankItem`, `DuelBankOption`, `DuelBankTemplate`, `Lesson*`, `Question*`, `Track`, `SimInstrument`, `Badge`                                                                     | replicated (reference data)                                                      | content size          |
+| `ChatMessage`, `ChatRead`                                                                                                                                                           | `chatId`                                                                         | per-chat volume       |
+| `Friendship`, `Follow`, `BlockedUser`                                                                                                                                               | `userId` (requester side; friendship rows exist in both directions, doc 06 §4.7) | per-user social graph |
+| `CommunityPost`, `PostComment`, `PostVote`, `PollVote`, `PostReport`, `SavedPost`                                                                                                   | `communityId` (posts/comments/votes) / `userId` (saved posts)                    | per-community volume  |
+| `AuditLog`, `OutboxEvent`, `IdempotencyRecord`                                                                                                                                      | not sharded by user — see §4.4                                                   | operational           |
 
 ### 4.2 Hash vs range sharding
 
@@ -558,29 +560,29 @@ The design rule is: **a request touches one shard if at all
 possible.** The queries that threaten this, and the answer for
 each:
 
-| Cross-shard query | How it is avoided / handled |
-|---|---|
-| Duel settlement (2 users' Ratings + 2 result rows) | Avoided: duel data shards by `duelId`; the settlement transaction runs on the duel's shard, and the Rating updates are routed there too — the Rating rows for both players are *also* written on the duel shard in a `RatingShardMirror`… no. **Honest answer:** Ratings cannot live on both the user shard and the duel shard. Decision: **Rating updates stay on the user's shard**, and duel settlement becomes a **two-phase flow**: (1) settle the duel on the duel shard (answers, results, XP), (2) apply Rating updates per player on each player's shard, each guarded by the same idempotency key `duel:{duelId}`. If step 2 fails for one player, it is retried from the outbox (§6) — the duel is settled, the Rating catches up, and the user sees "Rating updating" rather than a wrong Rating. This is the one place where eventual consistency is accepted for Ratings, and only for the cross-shard case — single-shard Ratings stay transactional. |
-| "My duel history" (last 5 per type, doc 06) | Avoided: `DuelGameResult` is **dual-written** — the full row on the duel shard, and a **slim summary row** (`duelId, userId, type, result, score, ratingDelta, createdAt`) on the player's user shard. History reads hit the user shard only. The summary is written via the outbox (§6), so it can lag by seconds, never be lost. |
-| Leaderboards (global + per-country) | Avoided: leaderboards live in **Redis sorted sets**, not in Postgres (§3.3). A global leaderboard is a single sorted set; sharding Postgres does not shard the leaderboard. |
-| Daily Duel pairing (two strangers, same day's set) | Avoided: the daily set is reference data (replicated), and pairing is by finish order — the pair is formed in Redis, and the settlement flow above handles the two shards. |
-| Friend lookup ("is X my friend?") | Avoided: `Friendship` rows exist in both directions (doc 06 §4.7), so the check is one row on the requester's shard. |
-| "My feed" (posts from communities I joined + users I follow) | Handled: feed is a **scatter-gather with a cap** — query the (few) community shards the user follows, take top 20 per shard, merge and sort in the API, cache the merged page for 60 s. The user follows a handful of communities, not hundreds, so the fan-out is bounded. |
-| Admin / analytics ("all duels today") | Handled: analytics reads from a **separate analytics replica** fed by logical replication from all shards (or from the archived cold store, §2.4). Admin queries never run against a live shard. |
-| Search across users (by name/email) | Handled: a dedicated search index (or a single `user_directory` reference table on the router, replicated) — never a scatter-gather over all shards for a login. **Login by email must never scatter-gather:** the router keeps a small `email → userId → shard` directory (replicated, cached in Redis). |
+| Cross-shard query                                            | How it is avoided / handled                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Duel settlement (2 users' Ratings + 2 result rows)           | Avoided: duel data shards by `duelId`; the settlement transaction runs on the duel's shard, and the Rating updates are routed there too — the Rating rows for both players are _also_ written on the duel shard in a `RatingShardMirror`… no. **Honest answer:** Ratings cannot live on both the user shard and the duel shard. Decision: **Rating updates stay on the user's shard**, and duel settlement becomes a **two-phase flow**: (1) settle the duel on the duel shard (answers, results, XP), (2) apply Rating updates per player on each player's shard, each guarded by the same idempotency key `duel:{duelId}`. If step 2 fails for one player, it is retried from the outbox (§6) — the duel is settled, the Rating catches up, and the user sees "Rating updating" rather than a wrong Rating. This is the one place where eventual consistency is accepted for Ratings, and only for the cross-shard case — single-shard Ratings stay transactional. |
+| "My duel history" (last 5 per type, doc 06)                  | Avoided: `DuelGameResult` is **dual-written** — the full row on the duel shard, and a **slim summary row** (`duelId, userId, type, result, score, ratingDelta, createdAt`) on the player's user shard. History reads hit the user shard only. The summary is written via the outbox (§6), so it can lag by seconds, never be lost.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Leaderboards (global + per-country)                          | Avoided: leaderboards live in **Redis sorted sets**, not in Postgres (§3.3). A global leaderboard is a single sorted set; sharding Postgres does not shard the leaderboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Daily Duel pairing (two strangers, same day's set)           | Avoided: the daily set is reference data (replicated), and pairing is by finish order — the pair is formed in Redis, and the settlement flow above handles the two shards.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Friend lookup ("is X my friend?")                            | Avoided: `Friendship` rows exist in both directions (doc 06 §4.7), so the check is one row on the requester's shard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| "My feed" (posts from communities I joined + users I follow) | Handled: feed is a **scatter-gather with a cap** — query the (few) community shards the user follows, take top 20 per shard, merge and sort in the API, cache the merged page for 60 s. The user follows a handful of communities, not hundreds, so the fan-out is bounded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Admin / analytics ("all duels today")                        | Handled: analytics reads from a **separate analytics replica** fed by logical replication from all shards (or from the archived cold store, §2.4). Admin queries never run against a live shard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Search across users (by name/email)                          | Handled: a dedicated search index (or a single `user_directory` reference table on the router, replicated) — never a scatter-gather over all shards for a login. **Login by email must never scatter-gather:** the router keeps a small `email → userId → shard` directory (replicated, cached in Redis).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ### 4.4 What breaks if you shard wrong
 
-| Breaks | Why | The fix (decide before sharding) |
-|---|---|---|
-| Global `UNIQUE(email)` | Two shards can both accept the same email | Email uniqueness is enforced at the router directory (§4.3), with a unique constraint on the directory table itself |
-| `UNIQUE(userId, eventId)` in `RatingHistory` | The constraint is per-shard, so a duplicate event on two shards is not caught | Idempotency is enforced by the idempotency key living on the *user's* shard, checked before the Rating write (§6) |
-| `UNIQUE(duelId, userId)` in `DuelGameResult` | Same as above | Enforced on the duel shard (the full row lives there) |
-| Foreign keys across shards | Postgres cannot enforce a FK to a row on another shard | FKs become **application-level checks** at write time (does this `userId` exist? does this `bankItemId` exist?) plus periodic reconciliation jobs that report orphans. Reference data (bank items) is replicated, so its FKs still work locally |
-| `JOIN` across shards | No single query can join them | Denormalise at write time (store the display name on the result row, not just the user id) or batch-fetch by id from the right shard |
-| `COUNT(*)` / `SUM()` across all users | Becomes a scatter-gather over N shards | Pre-computed counters (§3.2) — counts are never computed live at scale |
-| Distributed transactions (2PC) | Slow, fragile, and a single shard outage blocks all writes | Do not use 2PC. Use the outbox + idempotent retry pattern (§6) instead — at-least-once delivery with exactly-once *effect* |
-| `SERIAL` / sequences | Per-shard sequences collide | All ids are UUIDs already (Blueprint §12) — this is one decision that already pays off. Never introduce a sequence in a sharded table |
+| Breaks                                       | Why                                                                           | The fix (decide before sharding)                                                                                                                                                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Global `UNIQUE(email)`                       | Two shards can both accept the same email                                     | Email uniqueness is enforced at the router directory (§4.3), with a unique constraint on the directory table itself                                                                                                                             |
+| `UNIQUE(userId, eventId)` in `RatingHistory` | The constraint is per-shard, so a duplicate event on two shards is not caught | Idempotency is enforced by the idempotency key living on the _user's_ shard, checked before the Rating write (§6)                                                                                                                               |
+| `UNIQUE(duelId, userId)` in `DuelGameResult` | Same as above                                                                 | Enforced on the duel shard (the full row lives there)                                                                                                                                                                                           |
+| Foreign keys across shards                   | Postgres cannot enforce a FK to a row on another shard                        | FKs become **application-level checks** at write time (does this `userId` exist? does this `bankItemId` exist?) plus periodic reconciliation jobs that report orphans. Reference data (bank items) is replicated, so its FKs still work locally |
+| `JOIN` across shards                         | No single query can join them                                                 | Denormalise at write time (store the display name on the result row, not just the user id) or batch-fetch by id from the right shard                                                                                                            |
+| `COUNT(*)` / `SUM()` across all users        | Becomes a scatter-gather over N shards                                        | Pre-computed counters (§3.2) — counts are never computed live at scale                                                                                                                                                                          |
+| Distributed transactions (2PC)               | Slow, fragile, and a single shard outage blocks all writes                    | Do not use 2PC. Use the outbox + idempotent retry pattern (§6) instead — at-least-once delivery with exactly-once _effect_                                                                                                                      |
+| `SERIAL` / sequences                         | Per-shard sequences collide                                                   | All ids are UUIDs already (Blueprint §12) — this is one decision that already pays off. Never introduce a sequence in a sharded table                                                                                                           |
 
 ### 4.5 How sharding is implemented with Prisma (the honest part)
 
@@ -589,6 +591,7 @@ each:
 Three approaches exist; the decision is:
 
 **Chosen: application-level routing.**
+
 - A `ShardRouter` in the repository layer maps a shard key →
   a `PrismaClient` (one client per shard, each with its own
   `DATABASE_URL`, e.g. `DATABASE_URL_SHARD_0…3`).
@@ -605,6 +608,7 @@ Three approaches exist; the decision is:
   unchanged (the schema is the same on every shard).
 
 **Fallback: Citus (Postgres extension).**
+
 - Citus distributes tables from a coordinator node and keeps
   SQL (including joins on the distribution column) working.
   Prisma talks to the coordinator as if it were one Postgres.
@@ -657,17 +661,17 @@ Redis is fast, volatile, and not a database. The rule is:
 anything whose loss is survivable. Postgres holds everything
 else.**
 
-| Data | Lives in | Why | If Redis is lost |
-|---|---|---|---|
-| Matchmaking queues (`live:queue:LIVE`, `live:queue:BLITZ`) | Redis sorted sets | Ephemeral by nature; a queue is meaningless after a restart | Players re-join the queue. No Rating, no money, no history is lost |
-| Live duel state (`live:duel:{id}`, `live:user-duel:{userId}`, `live:rematch:{id}`) | Redis (TTL 900 s) | Per-second updates; Postgres cannot do this cheaply | The duel is **voided**, no Rating changes (doc 09 §2.2 — a void is always safer than a wrong Rating) |
-| Leaderboards (sorted sets, top-100 cache) | Redis | Sorted sets are the right data structure; Postgres `ORDER BY rating LIMIT 100` on 1M rows is not | Rebuilt from `UserRating` in Postgres (`rebuildLeaderboards`, already exists in `RatingsService`) |
-| Rate limits | Redis | Counters with TTL | Limits reset (fail open, briefly) — acceptable, and safer than failing closed and locking all users out |
-| Sessions / refresh-token metadata | Redis (cache) + Postgres (source of truth) | Fast lookup; Postgres `RefreshToken` is the authority | Rebuilt from Postgres; users stay logged in |
-| Hot counters (§3.2) | Redis, flushed to Postgres every 5 min | Write-rate relief | Rebuilt from Postgres + replay of the last 5 minutes of events from the outbox |
-| `rested:{userId}` exposure sets (§2.4) | Redis sets | Compact, per-user | Rebuilt from the exposure archive; worst case is one repeated question |
-| Feed / profile caches | Redis, TTL 60 s | Read relief | Cache miss → read Postgres. Nothing is lost |
-| `email → shard` directory (§4.3) | Redis (cache) + a Postgres directory table (source of truth) | Login must be fast | Rebuilt from the directory table |
+| Data                                                                               | Lives in                                                     | Why                                                                                              | If Redis is lost                                                                                        |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Matchmaking queues (`live:queue:LIVE`, `live:queue:BLITZ`)                         | Redis sorted sets                                            | Ephemeral by nature; a queue is meaningless after a restart                                      | Players re-join the queue. No Rating, no money, no history is lost                                      |
+| Live duel state (`live:duel:{id}`, `live:user-duel:{userId}`, `live:rematch:{id}`) | Redis (TTL 900 s)                                            | Per-second updates; Postgres cannot do this cheaply                                              | The duel is **voided**, no Rating changes (doc 09 §2.2 — a void is always safer than a wrong Rating)    |
+| Leaderboards (sorted sets, top-100 cache)                                          | Redis                                                        | Sorted sets are the right data structure; Postgres `ORDER BY rating LIMIT 100` on 1M rows is not | Rebuilt from `UserRating` in Postgres (`rebuildLeaderboards`, already exists in `RatingsService`)       |
+| Rate limits                                                                        | Redis                                                        | Counters with TTL                                                                                | Limits reset (fail open, briefly) — acceptable, and safer than failing closed and locking all users out |
+| Sessions / refresh-token metadata                                                  | Redis (cache) + Postgres (source of truth)                   | Fast lookup; Postgres `RefreshToken` is the authority                                            | Rebuilt from Postgres; users stay logged in                                                             |
+| Hot counters (§3.2)                                                                | Redis, flushed to Postgres every 5 min                       | Write-rate relief                                                                                | Rebuilt from Postgres + replay of the last 5 minutes of events from the outbox                          |
+| `rested:{userId}` exposure sets (§2.4)                                             | Redis sets                                                   | Compact, per-user                                                                                | Rebuilt from the exposure archive; worst case is one repeated question                                  |
+| Feed / profile caches                                                              | Redis, TTL 60 s                                              | Read relief                                                                                      | Cache miss → read Postgres. Nothing is lost                                                             |
+| `email → shard` directory (§4.3)                                                   | Redis (cache) + a Postgres directory table (source of truth) | Login must be fast                                                                               | Rebuilt from the directory table                                                                        |
 
 **What never lives only in Redis:** Ratings, XP balances,
 simulator cash/holdings, duel results, idempotency keys,
@@ -689,27 +693,27 @@ live duel.
 
 ### 6.1 Strong consistency required (single Postgres transaction, no exceptions)
 
-| Operation | Transaction boundary | Why it cannot be eventual |
-|---|---|---|
-| Rating update | `UserRating` row + `RatingHistory` row + idempotency key, one transaction (doc 04 §5) | A Rating that moves without its audit row is unexplainable; a Rating that moves twice is corruption |
-| Simulator trade | `SimPortfolio.cash` + `SimHolding` + `SimOrder`, one transaction, portfolio row locked (`SELECT … FOR UPDATE`) | Cash and holdings must never disagree, even for a millisecond — a concurrent trade reading stale cash is a negative balance |
-| Lesson completion | attempt + XP grant + streak + badge check, one transaction (Blueprint §12) | Partial completion (XP without the completion, or vice versa) is a support ticket |
-| Duel settlement (single-shard case) | Ratings + both `DuelGameResult` rows + both XP grants, one transaction (docs 07/09 §7) | The result page, the Rating, and the XP must agree |
-| XP grant | `XpLedger` row (unique `idempotencyKey`) + `UserStats` update, one transaction | Double XP is the easiest bug to create and the hardest to explain |
-| Friend accept | both directions' `Friendship` rows, one transaction | One direction without the other is a half-friendship |
+| Operation                           | Transaction boundary                                                                                           | Why it cannot be eventual                                                                                                   |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Rating update                       | `UserRating` row + `RatingHistory` row + idempotency key, one transaction (doc 04 §5)                          | A Rating that moves without its audit row is unexplainable; a Rating that moves twice is corruption                         |
+| Simulator trade                     | `SimPortfolio.cash` + `SimHolding` + `SimOrder`, one transaction, portfolio row locked (`SELECT … FOR UPDATE`) | Cash and holdings must never disagree, even for a millisecond — a concurrent trade reading stale cash is a negative balance |
+| Lesson completion                   | attempt + XP grant + streak + badge check, one transaction (Blueprint §12)                                     | Partial completion (XP without the completion, or vice versa) is a support ticket                                           |
+| Duel settlement (single-shard case) | Ratings + both `DuelGameResult` rows + both XP grants, one transaction (docs 07/09 §7)                         | The result page, the Rating, and the XP must agree                                                                          |
+| XP grant                            | `XpLedger` row (unique `idempotencyKey`) + `UserStats` update, one transaction                                 | Double XP is the easiest bug to create and the hardest to explain                                                           |
+| Friend accept                       | both directions' `Friendship` rows, one transaction                                                            | One direction without the other is a half-friendship                                                                        |
 
 ### 6.2 Eventual consistency is fine (and cheaper)
 
-| Data | Why eventual is fine | Lag budget |
-|---|---|---|
-| Leaderboards / ranks / percentiles | A rank that is 5 seconds stale is invisible to a user | < 60 s |
-| `UserStats` counters (totalXp, streaks) | Derived from the ledger; a 5-minute flush delay (§3.2) is invisible | < 5 min |
-| Feed ranking / post scores | A vote that takes 10 seconds to move a post is invisible | < 60 s |
-| `DuelBankItem` calibration (`correctRate`, `discrimination`) | Computed from pilot data in batches, never live | nightly |
-| Community `memberCount` | A count that is off by one for a minute is invisible | < 5 min |
-| Notification delivery | A push that arrives 30 seconds late is fine | < 5 min |
-| Duel-history summary rows (§4.3 dual-write) | The full result is already stored; the summary is a read optimisation | < 60 s |
-| Cross-shard Rating catch-up (§4.3) | Only in the sharded case; the duel is settled, the Rating follows | < 5 min, with "Rating updating" shown |
+| Data                                                         | Why eventual is fine                                                  | Lag budget                            |
+| ------------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------- |
+| Leaderboards / ranks / percentiles                           | A rank that is 5 seconds stale is invisible to a user                 | < 60 s                                |
+| `UserStats` counters (totalXp, streaks)                      | Derived from the ledger; a 5-minute flush delay (§3.2) is invisible   | < 5 min                               |
+| Feed ranking / post scores                                   | A vote that takes 10 seconds to move a post is invisible              | < 60 s                                |
+| `DuelBankItem` calibration (`correctRate`, `discrimination`) | Computed from pilot data in batches, never live                       | nightly                               |
+| Community `memberCount`                                      | A count that is off by one for a minute is invisible                  | < 5 min                               |
+| Notification delivery                                        | A push that arrives 30 seconds late is fine                           | < 5 min                               |
+| Duel-history summary rows (§4.3 dual-write)                  | The full result is already stored; the summary is a read optimisation | < 60 s                                |
+| Cross-shard Rating catch-up (§4.3)                           | Only in the sharded case; the duel is settled, the Rating follows     | < 5 min, with "Rating updating" shown |
 
 ### 6.3 Outbox pattern (already in the schema — use it properly)
 
@@ -726,7 +730,7 @@ live duel.
   consumer must therefore be **idempotent**: keyed by the
   event id, with the same unique-key guards as §6.1.
   At-least-once delivery + idempotent consumers = exactly-once
-  *effect*. This is the pattern that replaces distributed
+  _effect_. This is the pattern that replaces distributed
   transactions in §4.4.
 - **Poison events:** after 5 failed attempts, an event goes to
   a dead-letter state (a `failedAt` + `lastError` — add these
@@ -795,7 +799,7 @@ repeated here because it is the correctness-critical path:
   backfill the old rows in batches. Step 4: deploy code that
   reads the new. Step 5: drop the old — in a later release.
 - **Backfill in batches:** `WHERE id > $lastId ORDER BY id
-  LIMIT 1000`, with a pause between batches, during
+LIMIT 1000`, with a pause between batches, during
   low-traffic hours. A single `UPDATE … WHERE …` over 100M
   rows locks the table and bloats it; a batched backfill does
   neither.
@@ -821,22 +825,22 @@ repeated here because it is the correctness-critical path:
 
 ### 7.3 Monitoring — metrics and alerts (the list, not a vibe)
 
-| Metric | Alert threshold | Why |
-|---|---|---|
-| Table size per hot table (`pg_total_relation_size`) | > 50 GB (Phase B trigger) / > 500 GB (Phase C trigger) | The scaling ladder (§3) runs on this |
-| Row count per hot table | > 10M (Phase B) / > 100M (Phase C) | Same |
-| Index bloat (`pgstattuple` or `pg_bloat_check`) | index > 2× its expected size | Bloat is the silent killer of hot tables; fix with `REINDEX CONCURRENTLY` |
-| Slow queries (`pg_stat_statements`, p95 per query) | any query p95 > 300 ms for 7 days | Phase B trigger; usually a missing index or an N+1 |
-| Autovacuum lag (dead tuples, `n_dead_tup`) | dead tuples > 10% of live tuples on a hot table | Dead tuples slow every scan; tune autovacuum per table (hot tables need aggressive settings, not the defaults) |
-| Connection pool usage (PgBouncer) | > 80% of pool for 10 minutes | Pool exhaustion is a full outage that looks like a database outage |
-| Replication lag (replicas) | > 5 s warn, > 30 s page | §3 — reads route back to primary while lag is high |
-| Redis memory usage | > 80% of maxmemory | Eviction of leaderboard/counter data; add memory or a separate instance (§5) |
-| Redis key count by prefix (`live:*`, `leaderboard:*`) | sudden 10× change | A runaway queue or a leak (keys without TTL) |
-| Outbox unprocessed age | oldest unprocessed event > 5 min warn, > 30 min page | §6.3 — events are the cross-service glue; a stuck relay is a silent failure |
-| Duel settlement failures | any `RATING_EVENT_DUPLICATE` storm or settle retry rate > 1% | §6.4 — settlement is the correctness-critical path |
-| Backup age / last successful restore drill | backup older than 25 hours; drill older than 120 days | §7.1 |
-| Disk usage | > 70% warn, > 85% page | WAL archiving + growth (§1) fill disks faster than expected |
-| Cache hit ratio (`pg_stat_database.blks_hit`) | < 99% on the primary | The working set no longer fits in RAM — the earliest sign that partitioning or a bigger instance is due |
+| Metric                                                | Alert threshold                                              | Why                                                                                                            |
+| ----------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Table size per hot table (`pg_total_relation_size`)   | > 50 GB (Phase B trigger) / > 500 GB (Phase C trigger)       | The scaling ladder (§3) runs on this                                                                           |
+| Row count per hot table                               | > 10M (Phase B) / > 100M (Phase C)                           | Same                                                                                                           |
+| Index bloat (`pgstattuple` or `pg_bloat_check`)       | index > 2× its expected size                                 | Bloat is the silent killer of hot tables; fix with `REINDEX CONCURRENTLY`                                      |
+| Slow queries (`pg_stat_statements`, p95 per query)    | any query p95 > 300 ms for 7 days                            | Phase B trigger; usually a missing index or an N+1                                                             |
+| Autovacuum lag (dead tuples, `n_dead_tup`)            | dead tuples > 10% of live tuples on a hot table              | Dead tuples slow every scan; tune autovacuum per table (hot tables need aggressive settings, not the defaults) |
+| Connection pool usage (PgBouncer)                     | > 80% of pool for 10 minutes                                 | Pool exhaustion is a full outage that looks like a database outage                                             |
+| Replication lag (replicas)                            | > 5 s warn, > 30 s page                                      | §3 — reads route back to primary while lag is high                                                             |
+| Redis memory usage                                    | > 80% of maxmemory                                           | Eviction of leaderboard/counter data; add memory or a separate instance (§5)                                   |
+| Redis key count by prefix (`live:*`, `leaderboard:*`) | sudden 10× change                                            | A runaway queue or a leak (keys without TTL)                                                                   |
+| Outbox unprocessed age                                | oldest unprocessed event > 5 min warn, > 30 min page         | §6.3 — events are the cross-service glue; a stuck relay is a silent failure                                    |
+| Duel settlement failures                              | any `RATING_EVENT_DUPLICATE` storm or settle retry rate > 1% | §6.4 — settlement is the correctness-critical path                                                             |
+| Backup age / last successful restore drill            | backup older than 25 hours; drill older than 120 days        | §7.1                                                                                                           |
+| Disk usage                                            | > 70% warn, > 85% page                                       | WAL archiving + growth (§1) fill disks faster than expected                                                    |
+| Cache hit ratio (`pg_stat_database.blks_hit`)         | < 99% on the primary                                         | The working set no longer fits in RAM — the earliest sign that partitioning or a bigger instance is due        |
 
 **Dashboards:** one page per hot table (size, rows, p95 of its
 top 3 queries, bloat, dead tuples), one page for Redis (memory,
@@ -853,6 +857,7 @@ exist.
 
 **Trigger:** already met — this is v1.
 **Work:**
+
 - Add the indexes in §2.1 (with `CREATE INDEX CONCURRENTLY`).
 - Cursor pagination on hot tables (§2.3); keep offset pagination
   only on small tables.
@@ -860,18 +865,20 @@ exist.
   as listed), with verify-before-delete.
 - N+1 review gate (§2.5).
 - `pg_stat_statements` enabled; the §7 dashboard built.
-**Code changes:** repository methods only (indexes, pagination
-cursors, archive jobs). No schema redesign, no new infrastructure.
-**Exit criteria:** every query in §1 is index-served (verified
-with `EXPLAIN ANALYZE`, not assumed); retention jobs run and
-are logged; no hot table grows without a retention rule.
+  **Code changes:** repository methods only (indexes, pagination
+  cursors, archive jobs). No schema redesign, no new infrastructure.
+  **Exit criteria:** every query in §1 is index-served (verified
+  with `EXPLAIN ANALYZE`, not assumed); retention jobs run and
+  are logged; no hot table grows without a retention rule.
 
 ### Phase B — partitioning + replicas
 
 **Trigger:** any trigger in §3, row B (hot table > 10M rows or
+
 > 50 GB, p95 > 300 ms for 7 days, CPU > 70% for 7 days, or
-writes > 1,000 rows/s).
-**Work:**
+> writes > 1,000 rows/s).
+> **Work:**
+
 - Monthly RANGE partitions on the tables in §3.1 (PK change to
   include `createdAt` — §3.1, Prisma implication).
 - 1–2 read replicas; repository methods declare
@@ -885,13 +892,13 @@ writes > 1,000 rows/s).
   counts, `ZREVRANK` for single-user rank.
 - UUIDv7 for new high-write tables (§2.6).
 - Outbox dead-letter columns (`failedAt`, `lastError`).
-**Code changes:** repository layer (partition-aware PKs,
-replica flag, counter flush), config (pooler, replica URLs),
-archive jobs (partition drops instead of deletes). Services
-do not change — the repository is the seam (Blueprint §4).
-**Exit criteria:** old months drop in seconds; p95 back under
-200 ms; replica lag under 5 s; counters survive a Redis restart
-(rebuild test).
+  **Code changes:** repository layer (partition-aware PKs,
+  replica flag, counter flush), config (pooler, replica URLs),
+  archive jobs (partition drops instead of deletes). Services
+  do not change — the repository is the seam (Blueprint §4).
+  **Exit criteria:** old months drop in seconds; p95 back under
+  200 ms; replica lag under 5 s; counters survive a Redis restart
+  (rebuild test).
 
 ### Phase C — sharding
 
@@ -899,6 +906,7 @@ do not change — the repository is the seam (Blueprint §4).
 hot table > 100M rows or > 500 GB, or vertical scaling
 exhausted).
 **Work:**
+
 - Build the `ShardRouter` (§4.5): consistent-hash ring, 4
   shards, `email → shard` directory, one `PrismaClient` per
   shard.
@@ -913,15 +921,15 @@ exhausted).
   summaries, outbox-driven Rating catch-up, Redis leaderboards,
   scatter-gather feed with a cap, analytics replica.
 - Per-shard backups, per-shard monitoring (§7).
-**Code changes:** every repository method gains a shard key
-parameter; services pass the key they already have (`userId` /
-`duelId`); tests gain a fake router. This is the biggest code
-change in the document — budget a full phase, and do not start
-it until the trigger fires.
-**Exit criteria:** no request touches more than 2 shards except
-the bounded feed fan-out; settlement correctness tests pass
-with a shard killed mid-settlement (the outbox retry recovers
-it); re-shard drill (4 → 8) rehearsed on staging.
+  **Code changes:** every repository method gains a shard key
+  parameter; services pass the key they already have (`userId` /
+  `duelId`); tests gain a fake router. This is the biggest code
+  change in the document — budget a full phase, and do not start
+  it until the trigger fires.
+  **Exit criteria:** no request touches more than 2 shards except
+  the bounded feed fan-out; settlement correctness tests pass
+  with a shard killed mid-settlement (the outbox retry recovers
+  it); re-shard drill (4 → 8) rehearsed on staging.
 
 ---
 

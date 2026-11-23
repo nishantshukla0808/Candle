@@ -30,7 +30,6 @@ export function dateInTimezone(at: Date, timezone: string): string {
     day: '2-digit',
     timeZone: timezone,
   }).formatToParts(at);
-  const get = (type: string): string =>
-    parts.find((p) => p.type === type)?.value ?? '00';
+  const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '00';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }

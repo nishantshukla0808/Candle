@@ -111,7 +111,10 @@ export class AuthService {
 
   // --- login / logout / refresh ------------------------------------------------
 
-  async login(dto: LoginDto, userAgent?: string | null): Promise<{ user: PublicUser; pair: TokenPair }> {
+  async login(
+    dto: LoginDto,
+    userAgent?: string | null
+  ): Promise<{ user: PublicUser; pair: TokenPair }> {
     const email = dto.email.trim().toLowerCase();
     const user = await this.repo.findUserByEmail(email);
     if (!user || !(await this.passwords.verify(dto.password, user.passwordHash))) {
@@ -125,10 +128,7 @@ export class AuthService {
     // and the login fails generically — never reveal why (no user
     // enumeration, blueprint §11).
     if (confirmed.deletedAt) {
-      if (
-        confirmed.deletionScheduledAt &&
-        confirmed.deletionScheduledAt.getTime() > Date.now()
-      ) {
+      if (confirmed.deletionScheduledAt && confirmed.deletionScheduledAt.getTime() > Date.now()) {
         await this.repo.cancelDeletion(confirmed.id);
         this.logger.info('Account deletion cancelled by login during grace', {
           userId: confirmed.id,

@@ -124,7 +124,13 @@ export class AuthRepository {
   // --- refresh tokens (rotation families) -------------------------------------
 
   async createRefreshToken(
-    input: { userId: string; familyId: string; tokenHash: string; expiresAt: Date; userAgent?: string | null },
+    input: {
+      userId: string;
+      familyId: string;
+      tokenHash: string;
+      expiresAt: Date;
+      userAgent?: string | null;
+    },
     tx?: TxClient
   ): Promise<void> {
     await this.db(tx).refreshToken.create({ data: input });

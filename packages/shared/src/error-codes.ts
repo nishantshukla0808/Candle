@@ -146,13 +146,11 @@ export const ERROR_DEFAULT_MESSAGES: Record<ErrorCode, string> = {
     'You already have a pending challenge with this player for this duel type.',
   [ErrorCode.CHALLENGE_EXPIRED]: 'This challenge has expired. Send a new one to play.',
   [ErrorCode.CHALLENGE_NOT_PENDING]: 'This challenge is no longer waiting for an answer.',
-  [ErrorCode.PROFILE_DISPLAY_NAME_COOLDOWN]:
-    'Display name can only be changed once every 30 days.',
+  [ErrorCode.PROFILE_DISPLAY_NAME_COOLDOWN]: 'Display name can only be changed once every 30 days.',
   [ErrorCode.SETTINGS_EXPORT_DAILY_LIMIT]:
     'You can export your data at most once per day. Please try again tomorrow.',
   [ErrorCode.SETTINGS_SESSION_NOT_FOUND]: 'That session was not found.',
-  [ErrorCode.SETTINGS_DELETE_ALREADY_REQUESTED]:
-    'Account deletion has already been requested.',
+  [ErrorCode.SETTINGS_DELETE_ALREADY_REQUESTED]: 'Account deletion has already been requested.',
   [ErrorCode.SETTINGS_DELETE_NOT_REQUESTED]: 'No account deletion is in progress.',
 };
 

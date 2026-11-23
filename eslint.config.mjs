@@ -1,4 +1,5 @@
 // Root ESLint flat config — Phase 0 quality gate: no console in production code.
+import globals from 'globals';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
@@ -41,6 +42,14 @@ export default tseslint.config(
   {
     files: ['**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  // Lottie generator/verifier are standalone Node CLI scripts, not app
+  // code: they need Node globals (process, Buffer, timers) and console
+  // output is their interface, not a production-code smell.
+  {
+    files: ['tools/lottie/*.mjs'],
+    languageOptions: { globals: globals.node },
+    rules: { 'no-console': 'off' },
   },
   // Test files may use console for debugging output. The in-memory fakes
   // are intentionally loosely typed (Map<string, any> stores); the

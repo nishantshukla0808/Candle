@@ -39,18 +39,18 @@
  * - The player (not the file) decides looping: idles loop, reactions
  *   play once (loop: false). See public/lottie/README.md.
  */
-import { writeFileSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const OUT_DIR = join(
   dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "apps",
-  "web",
-  "public",
-  "lottie",
+  '..',
+  '..',
+  'apps',
+  'web',
+  'public',
+  'lottie'
 );
 
 // ---------------------------------------------------------------- colours
@@ -67,13 +67,13 @@ const hex = (h) => {
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 };
 const C = {
-  ink: hex("#0B1120"),
-  gold: hex("#E9B44C"),
-  goldPale: hex("#FBE3A7"), // tint of gold, used for the flame core
-  mint: hex("#3ED598"),
-  rose: hex("#F26D6D"),
-  sky: hex("#3E8FE8"), // deepened from #5AA9FF — see note above
-  paper: hex("#F7F3E9"),
+  ink: hex('#0B1120'),
+  gold: hex('#E9B44C'),
+  goldPale: hex('#FBE3A7'), // tint of gold, used for the flame core
+  mint: hex('#3ED598'),
+  rose: hex('#F26D6D'),
+  sky: hex('#3E8FE8'), // deepened from #5AA9FF — see note above
+  paper: hex('#F7F3E9'),
   white: [1, 1, 1],
 };
 const col = (rgb, a = 1) => [...rgb, a];
@@ -94,7 +94,7 @@ const easeIn = (dims) => ({
 const dimsOf = (v) => (Array.isArray(v) ? v.length : 1);
 
 /** frames: [[t, value], ...]; ease: 'inOut' | 'out' | 'in' | 'linear' */
-function anim(frames, ease = "inOut") {
+function anim(frames, ease = 'inOut') {
   const eases = { inOut: easeInOut, out: easeOut, in: easeIn };
   // lottie-web requires keyframe values as ARRAYS even for 1-D
   // properties (rotation, opacity): scalar s/e is misread (verified
@@ -107,7 +107,7 @@ function anim(frames, ease = "inOut") {
       const kf = { t, s: arr(v) };
       if (idx < frames.length - 1) {
         kf.e = arr(frames[idx + 1][1]);
-        if (ease !== "linear") {
+        if (ease !== 'linear') {
           const d = dimsOf(v);
           Object.assign(kf, eases[ease](d));
         }
@@ -116,35 +116,31 @@ function anim(frames, ease = "inOut") {
     }),
   };
 }
-const hold = (frames) => ({
-  a: 1,
-  k: frames.map(([t, v]) => ({ t, s: Array.isArray(v) ? v : [v], h: 1 })),
-});
 const stat = (v) => ({ a: 0, k: v });
 
 // ------------------------------------------------------------ shape items
 const MN = {
-  el: "ADBE Vector Shape - Ellipse",
-  rc: "ADBE Vector Shape - Rect",
-  sh: "ADBE Vector Shape - Group",
-  sr: "ADBE Vector Shape - Star",
-  fl: "ADBE Vector Graphic - Fill",
-  st: "ADBE Vector Graphic - Stroke",
-  gr: "ADBE Vector Group",
-  tr: "ADBE Vector Graphic - Transform",
+  el: 'ADBE Vector Shape - Ellipse',
+  rc: 'ADBE Vector Shape - Rect',
+  sh: 'ADBE Vector Shape - Group',
+  sr: 'ADBE Vector Shape - Star',
+  fl: 'ADBE Vector Graphic - Fill',
+  st: 'ADBE Vector Graphic - Stroke',
+  gr: 'ADBE Vector Group',
+  tr: 'ADBE Vector Graphic - Transform',
 };
 const fill = (rgb, opacity = 100, animated = null) => ({
-  ty: "fl",
+  ty: 'fl',
   c: animated ?? { a: 0, k: col(rgb) },
   o: { a: 0, k: opacity },
   r: 1,
   bm: 0,
-  nm: "Fill",
+  nm: 'Fill',
   mn: MN.fl,
   hd: false,
 });
 const stroke = (rgb, width, cap = 2, opacity = 100) => ({
-  ty: "st",
+  ty: 'st',
   c: { a: 0, k: col(rgb) },
   o: { a: 0, k: opacity },
   w: { a: 0, k: width },
@@ -152,30 +148,30 @@ const stroke = (rgb, width, cap = 2, opacity = 100) => ({
   lj: 2,
   ml: 4,
   bm: 0,
-  nm: "Stroke",
+  nm: 'Stroke',
   mn: MN.st,
   hd: false,
 });
 const ellipse = (cx, cy, rx, ry) => ({
-  ty: "el",
+  ty: 'el',
   p: { a: 0, k: [cx, cy] },
   s: { a: 0, k: [rx * 2, ry * 2] },
-  nm: "Ellipse",
+  nm: 'Ellipse',
   mn: MN.el,
   hd: false,
 });
 const rect = (cx, cy, w, h, r = 0) => ({
-  ty: "rc",
+  ty: 'rc',
   p: { a: 0, k: [cx, cy] },
   s: { a: 0, k: [w, h] },
   r: { a: 0, k: r },
-  nm: "Rect",
+  nm: 'Rect',
   mn: MN.rc,
   hd: false,
 });
 /** points: [[x,y],...]; handles: {i: [[x,y],...], o: [[x,y],...]} (optional) */
 const path = (points, { closed = false, i = null, o = null } = {}) => ({
-  ty: "sh",
+  ty: 'sh',
   ks: {
     a: 0,
     k: {
@@ -185,12 +181,12 @@ const path = (points, { closed = false, i = null, o = null } = {}) => ({
       c: closed,
     },
   },
-  nm: "Path",
+  nm: 'Path',
   mn: MN.sh,
   hd: false,
 });
 const star = (cx, cy, outerR, innerR, points = 4, rotation = 0) => ({
-  ty: "sr",
+  ty: 'sr',
   p: { a: 0, k: [cx, cy] },
   r: { a: 0, k: rotation },
   pt: { a: 0, k: points },
@@ -199,13 +195,13 @@ const star = (cx, cy, outerR, innerR, points = 4, rotation = 0) => ({
   ir: { a: 0, k: innerR },
   is: { a: 0, k: 0 },
   sy: 1,
-  nm: "Star",
+  nm: 'Star',
   mn: MN.sr,
   hd: false,
 });
-const prop = (v) => (Array.isArray(v) || typeof v === "number" ? stat(v) : v);
+const prop = (v) => (Array.isArray(v) || typeof v === 'number' ? stat(v) : v);
 const tr = ({ p = [0, 0], a = [0, 0], s = [100, 100], r = 0, o = 100 } = {}) => ({
-  ty: "tr",
+  ty: 'tr',
   p: prop(p),
   a: prop(a),
   s: prop(s),
@@ -213,7 +209,7 @@ const tr = ({ p = [0, 0], a = [0, 0], s = [100, 100], r = 0, o = 100 } = {}) => 
   o: prop(o),
   sk: { a: 0, k: 0 },
   sa: { a: 0, k: 0 },
-  nm: "Transform",
+  nm: 'Transform',
   mn: MN.tr,
 });
 const group = (items, name, transform = {}) => {
@@ -227,7 +223,7 @@ const group = (items, name, transform = {}) => {
   // either all subgroups (a container) or one style with its shapes
   // (a leaf) — never a mix with a style after a subgroup.
   const out = [...items];
-  const slots = items.map((it, i) => (it.ty === "gr" ? i : -1)).filter((i) => i >= 0);
+  const slots = items.map((it, i) => (it.ty === 'gr' ? i : -1)).filter((i) => i >= 0);
   const subs = slots.map((i) => items[i]).reverse();
   slots.forEach((idx, k) => {
     out[idx] = subs[k];
@@ -239,7 +235,7 @@ const group = (items, name, transform = {}) => {
   const withIx = out.map((it, i) => ({ ...it, ix: i + 1 }));
   withIx.push({ ...tr(transform), ix: out.length + 1 });
   return {
-    ty: "gr",
+    ty: 'gr',
     nm: name,
     np: withIx.length,
     cix: 2,
@@ -279,7 +275,7 @@ const shapeLayer = (name, shapes, op) => ({
 const comp = (name, op, layers) => {
   layerInd = 0;
   return {
-    v: "5.7.4",
+    v: '5.7.4',
     fr: 30,
     ip: 0,
     op,
@@ -307,16 +303,11 @@ const comp = (name, op, layers) => {
 // SAME group (verified 2026-11-13 with a 3-fill test), so a group must
 // never mix two fills / a fill and a stroke. Group boundaries stop it.
 const MARK = {
-  mira: () => [group([star(100, 132, 13, 4.5, 4, 0), fill(C.ink)], "Compass rose")],
+  mira: () => [group([star(100, 132, 13, 4.5, 4, 0), fill(C.ink)], 'Compass rose')],
   kabir: () => [
     group(
-      [
-        rect(86, 143, 7, 10, 2),
-        rect(97, 140, 7, 16, 2),
-        rect(108, 137, 7, 22, 2),
-        fill(C.ink),
-      ],
-      "Bars",
+      [rect(86, 143, 7, 10, 2), rect(97, 140, 7, 16, 2), rect(108, 137, 7, 22, 2), fill(C.ink)],
+      'Bars'
     ),
   ],
   tara: () => [
@@ -331,11 +322,11 @@ const MARK = {
             [86, 139],
             [86, 125],
           ],
-          { closed: true },
+          { closed: true }
         ),
         fill(C.ink),
       ],
-      "Shield mark",
+      'Shield mark'
     ),
     group(
       [
@@ -345,11 +336,11 @@ const MARK = {
             [98, 143],
             [107, 134],
           ],
-          {},
+          {}
         ),
         stroke(C.paper, 2.5),
       ],
-      "Shield check",
+      'Shield check'
     ),
   ],
 };
@@ -359,47 +350,43 @@ const MARK = {
 // outline. The outer group pivots at the shoulder; `trExtra` carries
 // an animated rotation for wave / celebrate / thinking.
 function arm(side, bodyColor, trExtra = {}) {
-  const sx = side === "left" ? 73 : 127; // shoulder x
-  const hx = side === "left" ? 62 : 138; // hand x
+  const sx = side === 'left' ? 73 : 127; // shoulder x
+  const hx = side === 'left' ? 62 : 138; // hand x
   const line = () =>
     path(
       [
         [sx, 108],
         [hx, 150],
       ],
-      {},
+      {}
     );
   return group(
     [
-      group([line(), stroke(C.ink, 13)], "Arm outline"),
-      group([line(), stroke(bodyColor, 9)], "Arm core"),
-      group([ellipse(hx, 152, 6.5, 6.5), fill(bodyColor)], "Hand"),
-      group([ellipse(hx, 152, 6.5, 6.5), stroke(C.ink, 2)], "Hand outline"),
+      group([line(), stroke(C.ink, 13)], 'Arm outline'),
+      group([line(), stroke(bodyColor, 9)], 'Arm core'),
+      group([ellipse(hx, 152, 6.5, 6.5), fill(bodyColor)], 'Hand'),
+      group([ellipse(hx, 152, 6.5, 6.5), stroke(C.ink, 2)], 'Hand outline'),
     ],
-    side === "left" ? "Arm L" : "Arm R",
-    { p: [sx, 108], a: [sx, 108], ...trExtra },
+    side === 'left' ? 'Arm L' : 'Arm R',
+    { p: [sx, 108], a: [sx, 108], ...trExtra }
   );
 }
 
 // Eyes live in their own group so a blink is a scale-y squash around
 // the eye line. `blinkAt` = [startFrame, endFrame] of the squash.
 function eyesGroup(blinkKeyframes) {
-  return group(
-    [
-      ellipse(88, 63, 3.5, 4.5),
-      ellipse(112, 63, 3.5, 4.5),
-      fill(C.ink),
-    ],
-    "Eyes",
-    { p: [100, 63], a: [100, 63], s: blinkKeyframes },
-  );
+  return group([ellipse(88, 63, 3.5, 4.5), ellipse(112, 63, 3.5, 4.5), fill(C.ink)], 'Eyes', {
+    p: [100, 63],
+    a: [100, 63],
+    s: blinkKeyframes,
+  });
 }
 
 function headGroup(bodyColor, { blink = null, tilt = null, glasses = false } = {}) {
   const items = [
-    group([ellipse(100, 50, 29, 20), fill(C.ink)], "Hair"),
-    group([ellipse(100, 64, 27, 27), fill(bodyColor)], "Head fill"),
-    group([ellipse(100, 64, 27, 27), stroke(C.ink, 2.5)], "Head outline"),
+    group([ellipse(100, 50, 29, 20), fill(C.ink)], 'Hair'),
+    group([ellipse(100, 64, 27, 27), fill(bodyColor)], 'Head fill'),
+    group([ellipse(100, 64, 27, 27), stroke(C.ink, 2.5)], 'Head outline'),
     eyesGroup(blink ?? stat([100, 100])),
     group(
       [
@@ -419,20 +406,13 @@ function headGroup(bodyColor, { blink = null, tilt = null, glasses = false } = {
               [4, 5],
               [0, 0],
             ],
-          },
+          }
         ),
         stroke(C.ink, 2.5),
       ],
-      "Smile",
+      'Smile'
     ),
-    group(
-      [
-        ellipse(79, 73, 4.5, 3),
-        ellipse(121, 73, 4.5, 3),
-        fill(C.rose, 55),
-      ],
-      "Cheeks",
-    ),
+    group([ellipse(79, 73, 4.5, 3), ellipse(121, 73, 4.5, 3), fill(C.rose, 55)], 'Cheeks'),
   ];
   if (glasses) {
     items.push(
@@ -445,25 +425,25 @@ function headGroup(bodyColor, { blink = null, tilt = null, glasses = false } = {
               [96, 63],
               [104, 63],
             ],
-            {},
+            {}
           ),
           stroke(C.ink, 2),
         ],
-        "Glasses",
-      ),
+        'Glasses'
+      )
     );
   }
-  return group(items, "Head", { p: [100, 64], a: [100, 64], r: tilt ?? 0 });
+  return group(items, 'Head', { p: [100, 64], a: [100, 64], r: tilt ?? 0 });
 }
 
 function bodyGroup(bodyColor, mark) {
   return group(
     [
-      group([rect(100, 133, 66, 74, 30), fill(bodyColor)], "Body fill"),
-      group([rect(100, 133, 66, 74, 30), stroke(C.ink, 2.5)], "Body outline"),
+      group([rect(100, 133, 66, 74, 30), fill(bodyColor)], 'Body fill'),
+      group([rect(100, 133, 66, 74, 30), stroke(C.ink, 2.5)], 'Body outline'),
       ...MARK[mark](),
     ],
-    "Body",
+    'Body'
   );
 }
 
@@ -474,22 +454,15 @@ function mentor(bodyColor, mark, { charAnim = null, armL = null, armR = null, he
   return group(
     [
       // Faint halo disc — keeps the figure readable on any theme bg.
-      group([ellipse(100, 108, 76, 76), fill(C.white, 10)], "Halo"),
-      group(
-        [
-          ellipse(84, 170, 11, 5.5),
-          ellipse(116, 170, 11, 5.5),
-          fill(C.ink),
-        ],
-        "Feet",
-      ),
+      group([ellipse(100, 108, 76, 76), fill(C.white, 10)], 'Halo'),
+      group([ellipse(84, 170, 11, 5.5), ellipse(116, 170, 11, 5.5), fill(C.ink)], 'Feet'),
       bodyGroup(bodyColor, mark),
-      armL ?? arm("left", bodyColor),
-      armR ?? arm("right", bodyColor),
+      armL ?? arm('left', bodyColor),
+      armR ?? arm('right', bodyColor),
       head ?? headGroup(bodyColor),
     ],
-    "Mentor",
-    charAnim ? { p: charAnim } : {},
+    'Mentor',
+    charAnim ? { p: charAnim } : {}
   );
 }
 
@@ -504,7 +477,7 @@ function blinkKF(frames, at) {
       [at + 6, [100, 100]],
       [frames, [100, 100]],
     ],
-    "inOut",
+    'inOut'
   );
 }
 
@@ -519,13 +492,13 @@ function miraIdle() {
       [30, [0, -5]],
       [60, [0, 0]],
     ],
-    "inOut",
+    'inOut'
   );
-  const m = mentor(C.gold, "mira", {
+  const m = mentor(C.gold, 'mira', {
     charAnim: bob,
     head: headGroup(C.gold, { blink: blinkKF(FR, 40) }),
   });
-  return comp("mira-idle", FR, [shapeLayer("Mira", [m], FR)]);
+  return comp('mira-idle', FR, [shapeLayer('Mira', [m], FR)]);
 }
 
 function miraWave() {
@@ -545,7 +518,7 @@ function miraWave() {
       [56, 0], // fully down by 56 so the last frames are a clean rest pose
       [60, 0],
     ],
-    "inOut",
+    'inOut'
   );
   const tilt = anim(
     [
@@ -555,7 +528,7 @@ function miraWave() {
       [56, 0],
       [60, 0],
     ],
-    "inOut",
+    'inOut'
   );
   const bob = anim(
     [
@@ -563,14 +536,14 @@ function miraWave() {
       [30, [0, -3]],
       [60, [0, 0]],
     ],
-    "inOut",
+    'inOut'
   );
-  const m = mentor(C.gold, "mira", {
+  const m = mentor(C.gold, 'mira', {
     charAnim: bob,
-    armR: arm("right", C.gold, { r: wave }),
+    armR: arm('right', C.gold, { r: wave }),
     head: headGroup(C.gold, { blink: blinkKF(FR, 30), tilt }),
   });
-  return comp("mira-wave", FR, [shapeLayer("Mira", [m], FR)]);
+  return comp('mira-wave', FR, [shapeLayer('Mira', [m], FR)]);
 }
 
 function miraCelebrate() {
@@ -585,7 +558,7 @@ function miraCelebrate() {
       [38, [0, 0]],
       [45, [0, 0]],
     ],
-    "inOut",
+    'inOut'
   );
   const armUpL = anim(
     [
@@ -595,7 +568,7 @@ function miraCelebrate() {
       [40, 0], // down by 40 so the last frames are a clean rest pose
       [45, 0],
     ],
-    "inOut",
+    'inOut'
   );
   const armUpR = anim(
     [
@@ -605,12 +578,12 @@ function miraCelebrate() {
       [40, 0],
       [45, 0],
     ],
-    "inOut",
+    'inOut'
   );
-  const m = mentor(C.gold, "mira", {
+  const m = mentor(C.gold, 'mira', {
     charAnim: jump,
-    armL: arm("left", C.gold, { r: armUpL }),
-    armR: arm("right", C.gold, { r: armUpR }),
+    armL: arm('left', C.gold, { r: armUpL }),
+    armR: arm('right', C.gold, { r: armUpR }),
     head: headGroup(C.gold, { blink: blinkKF(FR, 20) }),
   });
   // Five spark stars pop around the head, staggered, then fade.
@@ -622,37 +595,33 @@ function miraCelebrate() {
     [100, 20, C.gold, 26],
   ];
   const sparks = sparkSpots.map(([x, y, color, t0], i) =>
-    group(
-      [star(x, y, 12, 4.5, 4, 0), fill(color)],
-      `Spark ${i + 1}`,
-      {
-        p: [x, y],
-        a: [x, y],
-        s: anim(
-          [
-            [t0, [0, 0]],
-            [t0 + 5, [115, 115]],
-            [t0 + 9, [90, 90]],
-            [45, [90, 90]],
-          ],
-          "out",
-        ),
-        o: anim(
-          [
-            [t0, 0],
-            [t0 + 3, 100],
-            [36, 100],
-            [42, 0], // fully faded by 42 — last frames are a clean rest pose
-            [45, 0],
-          ],
-          "inOut",
-        ),
-      },
-    ),
+    group([star(x, y, 12, 4.5, 4, 0), fill(color)], `Spark ${i + 1}`, {
+      p: [x, y],
+      a: [x, y],
+      s: anim(
+        [
+          [t0, [0, 0]],
+          [t0 + 5, [115, 115]],
+          [t0 + 9, [90, 90]],
+          [45, [90, 90]],
+        ],
+        'out'
+      ),
+      o: anim(
+        [
+          [t0, 0],
+          [t0 + 3, 100],
+          [36, 100],
+          [42, 0], // fully faded by 42 — last frames are a clean rest pose
+          [45, 0],
+        ],
+        'inOut'
+      ),
+    })
   );
-  return comp("mira-celebrate", FR, [
-    shapeLayer("Mira", [m], FR),
-    shapeLayer("Sparks", sparks, FR),
+  return comp('mira-celebrate', FR, [
+    shapeLayer('Mira', [m], FR),
+    shapeLayer('Sparks', sparks, FR),
   ]);
 }
 
@@ -670,7 +639,7 @@ function kabirThinking() {
       [60, 131],
       [72, 135],
     ],
-    "inOut",
+    'inOut'
   );
   const sway = anim(
     [
@@ -678,10 +647,10 @@ function kabirThinking() {
       [36, 5],
       [72, -4],
     ],
-    "inOut",
+    'inOut'
   );
-  const m = mentor(C.sky, "kabir", {
-    armR: arm("right", C.sky, { r: tap }),
+  const m = mentor(C.sky, 'kabir', {
+    armR: arm('right', C.sky, { r: tap }),
     head: headGroup(C.sky, { blink: blinkKF(FR, 50), tilt: sway, glasses: true }),
   });
   // Three thought dots appear one by one above the head, then fade
@@ -694,37 +663,33 @@ function kabirThinking() {
     [138, 16, 4.5, 20],
     [150, 8, 6, 32],
   ].map(([x, y, r, t0], i) =>
-    group(
-      [ellipse(x, y, r, r), fill(C.gold)],
-      `Thought dot ${i + 1}`,
-      {
-        p: [x, y],
-        a: [x, y],
-        s: anim(
-          [
-            [t0, [0, 0]],
-            [t0 + 6, [110, 110]],
-            [t0 + 10, [100, 100]],
-            [60, [100, 100]],
-            [72, [0, 0]], // back to 0 while invisible (opacity 0) — clean loop
-          ],
-          "out",
-        ),
-        o: anim(
-          [
-            [t0, 0],
-            [t0 + 4, 100],
-            [60, 100],
-            [72, 0],
-          ],
-          "inOut",
-        ),
-      },
-    ),
+    group([ellipse(x, y, r, r), fill(C.gold)], `Thought dot ${i + 1}`, {
+      p: [x, y],
+      a: [x, y],
+      s: anim(
+        [
+          [t0, [0, 0]],
+          [t0 + 6, [110, 110]],
+          [t0 + 10, [100, 100]],
+          [60, [100, 100]],
+          [72, [0, 0]], // back to 0 while invisible (opacity 0) — clean loop
+        ],
+        'out'
+      ),
+      o: anim(
+        [
+          [t0, 0],
+          [t0 + 4, 100],
+          [60, 100],
+          [72, 0],
+        ],
+        'inOut'
+      ),
+    })
   );
-  return comp("kabir-thinking", FR, [
-    shapeLayer("Kabir", [m], FR),
-    shapeLayer("Thought dots", dots, FR),
+  return comp('kabir-thinking', FR, [
+    shapeLayer('Kabir', [m], FR),
+    shapeLayer('Thought dots', dots, FR),
   ]);
 }
 
@@ -738,7 +703,7 @@ function taraShield() {
       [54, [108, 108]],
       [72, [100, 100]],
     ],
-    "inOut",
+    'inOut'
   );
   const nod = anim(
     [
@@ -750,7 +715,7 @@ function taraShield() {
       [60, 4],
       [72, 0],
     ],
-    "inOut",
+    'inOut'
   );
   const bob = anim(
     [
@@ -758,9 +723,9 @@ function taraShield() {
       [36, [0, -3]],
       [72, [0, 0]],
     ],
-    "inOut",
+    'inOut'
   );
-  const m = mentor(C.rose, "tara", {
+  const m = mentor(C.rose, 'tara', {
     charAnim: bob,
     head: headGroup(C.rose, { blink: blinkKF(FR, 30), tilt: nod }),
   });
@@ -777,12 +742,12 @@ function taraShield() {
         [76, 134],
         [76, 114],
       ],
-      { closed: true },
+      { closed: true }
     );
   const shield = group(
     [
-      group([shieldPath(), fill(C.rose)], "Shield fill"),
-      group([shieldPath(), stroke(C.ink, 2.5)], "Shield outline"),
+      group([shieldPath(), fill(C.rose)], 'Shield fill'),
+      group([shieldPath(), stroke(C.ink, 2.5)], 'Shield outline'),
       group(
         [
           path(
@@ -791,47 +756,40 @@ function taraShield() {
               [97, 143],
               [111, 126],
             ],
-            {},
+            {}
           ),
           stroke(C.paper, 3),
         ],
-        "Shield check",
+        'Shield check'
       ),
     ],
-    "Shield",
-    { p: [100, 136], a: [100, 136], s: pulse },
+    'Shield',
+    { p: [100, 136], a: [100, 136], s: pulse }
   );
-  const ring = group(
-    [
-      ellipse(100, 136, 50, 50),
-      stroke(C.gold, 2.5, 2, 100),
-    ],
-    "Pulse ring",
-    {
-      p: [100, 136],
-      a: [100, 136],
-      s: anim(
-        [
-          [0, [70, 70]],
-          [36, [160, 160]],
-          [72, [70, 70]],
-        ],
-        "out",
-      ),
-      o: anim(
-        [
-          [0, 0],
-          [10, 70],
-          [36, 0],
-          [72, 0],
-        ],
-        "inOut",
-      ),
-    },
-  );
-  return comp("tara-shield", FR, [
-    shapeLayer("Tara", [m], FR),
-    shapeLayer("Shield", [shield, ring], FR),
+  const ring = group([ellipse(100, 136, 50, 50), stroke(C.gold, 2.5, 2, 100)], 'Pulse ring', {
+    p: [100, 136],
+    a: [100, 136],
+    s: anim(
+      [
+        [0, [70, 70]],
+        [36, [160, 160]],
+        [72, [70, 70]],
+      ],
+      'out'
+    ),
+    o: anim(
+      [
+        [0, 0],
+        [10, 70],
+        [36, 0],
+        [72, 0],
+      ],
+      'inOut'
+    ),
+  });
+  return comp('tara-shield', FR, [
+    shapeLayer('Tara', [m], FR),
+    shapeLayer('Shield', [shield, ring], FR),
   ]);
 }
 
@@ -847,7 +805,7 @@ function streakFlame() {
       [40, [100, 102]],
       [48, [100, 100]],
     ],
-    "inOut",
+    'inOut'
   );
   const wobble = anim(
     [
@@ -857,7 +815,7 @@ function streakFlame() {
       [36, -1],
       [48, 0],
     ],
-    "inOut",
+    'inOut'
   );
   const innerFlicker = anim(
     [
@@ -867,7 +825,7 @@ function streakFlame() {
       [36, [103, 97]],
       [48, [100, 100]],
     ],
-    "inOut",
+    'inOut'
   );
   const flamePath = [
     [100, 162],
@@ -897,14 +855,12 @@ function streakFlame() {
   };
   // Outer flame (gold) + inner flame (pale gold), flickering in
   // opposite phase so the flame feels alive without changing shape.
-  const flame = group(
-    [
-      path(flamePath, { closed: true, ...flameHandles }),
-      fill(C.gold),
-    ],
-    "Flame",
-    { p: [100, 110], a: [100, 110], s: flicker, r: wobble },
-  );
+  const flame = group([path(flamePath, { closed: true, ...flameHandles }), fill(C.gold)], 'Flame', {
+    p: [100, 110],
+    a: [100, 110],
+    s: flicker,
+    r: wobble,
+  });
   // Inner flame gets its own group so it can flicker out of phase.
   const inner = group(
     [
@@ -917,51 +873,47 @@ function streakFlame() {
           [110, 104],
           [122, 132],
         ],
-        { closed: true },
+        { closed: true }
       ),
       fill(C.goldPale),
     ],
-    "Flame core",
-    { p: [100, 110], a: [100, 110], s: innerFlicker },
+    'Flame core',
+    { p: [100, 110], a: [100, 110], s: innerFlicker }
   );
   const sparks = [
     [86, 56, 10],
     [116, 44, 22],
   ].map(([x, y, t0], i) =>
-    group(
-      [ellipse(x, y, 2.5, 2.5), fill(C.gold)],
-      `Ember ${i + 1}`,
-      {
-        p: anim(
-          [
-            [t0, [x, y]],
-            [t0 + 16, [x + 3, y - 12]],
-            [48, [x, y]], // back to start while invisible (opacity 0) — clean loop
-          ],
-          "out",
-        ),
-        o: anim(
-          [
-            [t0, 0],
-            [t0 + 4, 100],
-            [t0 + 16, 0],
-            [48, 0],
-          ],
-          "inOut",
-        ),
-      },
-    ),
+    group([ellipse(x, y, 2.5, 2.5), fill(C.gold)], `Ember ${i + 1}`, {
+      p: anim(
+        [
+          [t0, [x, y]],
+          [t0 + 16, [x + 3, y - 12]],
+          [48, [x, y]], // back to start while invisible (opacity 0) — clean loop
+        ],
+        'out'
+      ),
+      o: anim(
+        [
+          [t0, 0],
+          [t0 + 4, 100],
+          [t0 + 16, 0],
+          [48, 0],
+        ],
+        'inOut'
+      ),
+    })
   );
-  return comp("streak-flame", FR, [
+  return comp('streak-flame', FR, [
     shapeLayer(
-      "Flame",
+      'Flame',
       [
-        group([ellipse(100, 168, 20, 5), fill(C.ink, 12)], "Ground shadow"),
+        group([ellipse(100, 168, 20, 5), fill(C.ink, 12)], 'Ground shadow'),
         flame,
         inner,
         ...sparks,
       ],
-      FR,
+      FR
     ),
   ]);
 }
@@ -969,105 +921,91 @@ function streakFlame() {
 function xpCountup() {
   const FR = 30; // 1.0 s, plays once
   // Centre star pops in, holds, pops out.
-  const centre = group(
-    [star(100, 100, 26, 10, 4, 0), fill(C.gold)],
-    "Centre star",
-    {
-      p: [100, 100],
-      a: [100, 100],
-      s: anim(
-        [
-          [0, [0, 0]],
-          [6, [120, 120]],
-          [10, [100, 100]],
-          [22, [100, 100]],
-          [28, [0, 0]], // fully out by 28 — last frames are clean
-        ],
-        "out",
-      ),
-      o: anim(
-        [
-          [0, 100],
-          [22, 100],
-          [28, 0],
-        ],
-        "inOut",
-      ),
-    },
-  );
+  const centre = group([star(100, 100, 26, 10, 4, 0), fill(C.gold)], 'Centre star', {
+    p: [100, 100],
+    a: [100, 100],
+    s: anim(
+      [
+        [0, [0, 0]],
+        [6, [120, 120]],
+        [10, [100, 100]],
+        [22, [100, 100]],
+        [28, [0, 0]], // fully out by 28 — last frames are clean
+      ],
+      'out'
+    ),
+    o: anim(
+      [
+        [0, 100],
+        [22, 100],
+        [28, 0],
+      ],
+      'inOut'
+    ),
+  });
   // Six small stars burst outwards from the centre and fade.
   const burstColors = [C.gold, C.mint, C.rose, C.sky, C.gold, C.mint];
   const burst = burstColors.map((color, i) => {
     const a = (i * Math.PI) / 3;
     const tx = Math.round(100 + 55 * Math.cos(a));
     const ty = Math.round(100 + 55 * Math.sin(a));
-    return group(
-      [star(tx, ty, 9, 3.5, 4, 0), fill(color)],
-      `Burst star ${i + 1}`,
-      {
-        p: anim(
-          [
-            [0, [100, 100]],
-            [30, [tx, ty]],
-          ],
-          "out",
-        ),
-        a: [tx, ty],
-        s: anim(
-          [
-            [0, [0, 0]],
-            [8, [100, 100]],
-            [30, [40, 40]],
-          ],
-          "out",
-        ),
-        o: anim(
-          [
-            [0, 100],
-            [20, 100],
-            [28, 0], // fully faded by 28 — last frames are clean
-          ],
-          "inOut",
-        ),
-      },
-    );
-  });
-  const ring = group(
-    [ellipse(100, 100, 50, 50), stroke(C.gold, 3)],
-    "Ring",
-    {
-      p: [100, 100],
-      a: [100, 100],
+    return group([star(tx, ty, 9, 3.5, 4, 0), fill(color)], `Burst star ${i + 1}`, {
+      p: anim(
+        [
+          [0, [100, 100]],
+          [30, [tx, ty]],
+        ],
+        'out'
+      ),
+      a: [tx, ty],
       s: anim(
         [
-          [0, [30, 30]],
-          [30, [150, 150]],
+          [0, [0, 0]],
+          [8, [100, 100]],
+          [30, [40, 40]],
         ],
-        "out",
+        'out'
       ),
       o: anim(
         [
           [0, 100],
-          [27, 0], // fully faded by 27 — last frames are clean
+          [20, 100],
+          [28, 0], // fully faded by 28 — last frames are clean
         ],
-        "inOut",
+        'inOut'
       ),
-    },
-  );
-  return comp("xp-countup", FR, [
-    shapeLayer("XP burst", [ring, ...burst, centre], FR),
-  ]);
+    });
+  });
+  const ring = group([ellipse(100, 100, 50, 50), stroke(C.gold, 3)], 'Ring', {
+    p: [100, 100],
+    a: [100, 100],
+    s: anim(
+      [
+        [0, [30, 30]],
+        [30, [150, 150]],
+      ],
+      'out'
+    ),
+    o: anim(
+      [
+        [0, 100],
+        [27, 0], // fully faded by 27 — last frames are clean
+      ],
+      'inOut'
+    ),
+  });
+  return comp('xp-countup', FR, [shapeLayer('XP burst', [ring, ...burst, centre], FR)]);
 }
 
 // ------------------------------------------------------------------ main
 const BUILDERS = {
-  "mira-idle": miraIdle,
-  "mira-wave": miraWave,
-  "mira-celebrate": miraCelebrate,
-  "kabir-thinking": kabirThinking,
-  "tara-shield": taraShield,
-  "streak-flame": streakFlame,
-  "xp-countup": xpCountup,
+  'mira-idle': miraIdle,
+  'mira-wave': miraWave,
+  'mira-celebrate': miraCelebrate,
+  'kabir-thinking': kabirThinking,
+  'tara-shield': taraShield,
+  'streak-flame': streakFlame,
+  'xp-countup': xpCountup,
 };
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -1077,7 +1015,7 @@ for (const [name, build] of Object.entries(BUILDERS)) {
   // the 50 KB budget (pretty-printed, the same files are 2-5x bigger).
   const json = JSON.stringify(build());
   const path = join(OUT_DIR, `${name}.json`);
-  writeFileSync(path, json + "\n");
-  console.log(`${name}.json  ${Buffer.byteLength(json, "utf8")} bytes`);
+  writeFileSync(path, json + '\n');
+  console.log(`${name}.json  ${Buffer.byteLength(json, 'utf8')} bytes`);
 }
 console.log(`Wrote ${Object.keys(BUILDERS).length} files to ${OUT_DIR}`);

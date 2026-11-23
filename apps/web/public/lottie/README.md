@@ -13,15 +13,15 @@ lottie-web's SVG renderer.
 
 ## Files
 
-| File | What it does | Length | Playback | Size |
-| --- | --- | --- | --- | --- |
-| `mira-idle.json` | Mira bobs gently and blinks; seamless loop | 60 f / 2.0 s | loop | 15.7 KB |
-| `mira-wave.json` | Mira raises her right arm and waves, head tilted | 60 f / 2.0 s | once (player may loop 2×) | 16.9 KB |
-| `mira-celebrate.json` | Both arms up, a small jump, 5 spark stars pop | 45 f / 1.5 s | once | 23.6 KB |
-| `kabir-thinking.json` | Kabir's hand rests at his chin, small tap wobble, head sways, 3 gold thought dots appear | 72 f / 2.4 s | loop | 21.3 KB |
-| `tara-shield.json` | Tara's shield pulses, she nods, a gold ring expands and fades | 72 f / 2.4 s | loop | 21.3 KB |
-| `streak-flame.json` | Flame flickers (outer + inner flame out of phase) with rising embers | 48 f / 1.6 s | loop | 6.0 KB |
-| `xp-countup.json` | Centre star pops, 6 stars burst outwards, ring expands — XP gain burst | 30 f / 1.0 s | once | 9.8 KB |
+| File                  | What it does                                                                             | Length       | Playback                  | Size    |
+| --------------------- | ---------------------------------------------------------------------------------------- | ------------ | ------------------------- | ------- |
+| `mira-idle.json`      | Mira bobs gently and blinks; seamless loop                                               | 60 f / 2.0 s | loop                      | 15.7 KB |
+| `mira-wave.json`      | Mira raises her right arm and waves, head tilted                                         | 60 f / 2.0 s | once (player may loop 2×) | 16.9 KB |
+| `mira-celebrate.json` | Both arms up, a small jump, 5 spark stars pop                                            | 45 f / 1.5 s | once                      | 23.6 KB |
+| `kabir-thinking.json` | Kabir's hand rests at his chin, small tap wobble, head sways, 3 gold thought dots appear | 72 f / 2.4 s | loop                      | 21.3 KB |
+| `tara-shield.json`    | Tara's shield pulses, she nods, a gold ring expands and fades                            | 72 f / 2.4 s | loop                      | 21.3 KB |
+| `streak-flame.json`   | Flame flickers (outer + inner flame out of phase) with rising embers                     | 48 f / 1.6 s | loop                      | 6.0 KB  |
+| `xp-countup.json`     | Centre star pops, 6 stars burst outwards, ring expands — XP gain burst                   | 30 f / 1.0 s | once                      | 9.8 KB  |
 
 Size budget: **< 50 KB per file** (compact JSON; the generator is the
 readable source, the JSON is the deliverable). All seven are currently
@@ -30,14 +30,14 @@ readable source, the JSON is the deliverable). All seven are currently
 ## How to play them
 
 ```js
-import lottie from "lottie-web";
+import lottie from 'lottie-web';
 
 const anim = lottie.loadAnimation({
-  container,                 // element the SVG goes into
-  renderer: "svg",           // SVG renderer (not canvas/html)
-  loop: true,                // idles only — see table; reactions use false
+  container, // element the SVG goes into
+  renderer: 'svg', // SVG renderer (not canvas/html)
+  loop: true, // idles only — see table; reactions use false
   autoplay: true,
-  path: "/lottie/mira-idle.json",
+  path: '/lottie/mira-idle.json',
 });
 ```
 
@@ -53,16 +53,16 @@ rest pose (arms down, sparks faded) so freezing on the last frame is safe.
 Doc 08 §2: a host reacts with a short line + a **mood tag**, and the tag
 maps to a Lottie file with no duel-logic change. The mapping:
 
-| Host | Mood | File |
-| --- | --- | --- |
-| Mira | `calm`, `idle`, default | `mira-idle.json` |
-| Mira | `happy`, `proud`, win | `mira-celebrate.json` |
-| Mira | `encouraging`, greeting, `hello` | `mira-wave.json` |
-| Mira | `cautious` | `mira-idle.json` |
-| Kabir | `thinking`, `calm`, default | `kabir-thinking.json` |
-| Tara | `calm`, `reassuring`, default | `tara-shield.json` |
-| — (system) | streak HUD | `streak-flame.json` |
-| — (system) | XP gain | `xp-countup.json` |
+| Host       | Mood                             | File                  |
+| ---------- | -------------------------------- | --------------------- |
+| Mira       | `calm`, `idle`, default          | `mira-idle.json`      |
+| Mira       | `happy`, `proud`, win            | `mira-celebrate.json` |
+| Mira       | `encouraging`, greeting, `hello` | `mira-wave.json`      |
+| Mira       | `cautious`                       | `mira-idle.json`      |
+| Kabir      | `thinking`, `calm`, default      | `kabir-thinking.json` |
+| Tara       | `calm`, `reassuring`, default    | `tara-shield.json`    |
+| — (system) | streak HUD                       | `streak-flame.json`   |
+| — (system) | XP gain                          | `xp-countup.json`     |
 
 Dev, Anaya and Rey have no files yet — same pipeline, new mentor in the
 generator, when their moments are designed.
@@ -74,10 +74,16 @@ Instead show a static frame — every file supports it, because a Lottie
 animation is just frames:
 
 ```js
-const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const anim = lottie.loadAnimation({ container, renderer: "svg", loop: false, autoplay: false, path });
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const anim = lottie.loadAnimation({
+  container,
+  renderer: 'svg',
+  loop: false,
+  autoplay: false,
+  path,
+});
 if (reduceMotion) {
-  anim.goToAndStop(0, true);   // static first frame, no motion
+  anim.goToAndStop(0, true); // static first frame, no motion
 } else {
   anim.play();
 }
@@ -101,7 +107,7 @@ node verify.mjs      # structural checks + real lottie-web playback + PNG frames
 - Generator: `tools/lottie/generate.mjs` (Node, no dependencies).
   Helpers build shapes (`ellipse`, `rect`, `path`, `star`), fills,
   strokes, groups and keyframes. Add a mentor with `mentor(color,
-  mark, {...})`, add a file with a builder function + an entry in
+mark, {...})`, add a file with a builder function + an entry in
   `BUILDERS`.
 - Verifier: `tools/lottie/verify.mjs`. Checks required fields, frame
   rate, size, colour ranges, zero external assets, keyframe ordering,
@@ -122,7 +128,7 @@ reproductions. Future authors must follow them or the render breaks
 silently (lottie-web fails without errors).
 
 1. **One style per group.** The SVG renderer duplicates every geometry
-   into *all later styles of the same group* (a 3-fill test gave
+   into _all later styles of the same group_ (a 3-fill test gave
    blue:3, green:2, red:1 subpaths). A group must hold exactly one fill
    OR one stroke; split multi-style artwork into subgroups. Group and
    layer boundaries stop the duplication. This is why the halo disc
@@ -133,7 +139,7 @@ silently (lottie-web fails without errors).
    item of a group paints on top; the player paints the last item
    first. The generator's helpers take items in paint order (back
    first) and reverse them — see `group()`, `shapeLayer()`, `comp()`.
-   A fill only styles the geometries *before* it in the same group, so
+   A fill only styles the geometries _before_ it in the same group, so
    the reversal never moves a style ahead of its shapes.
 3. **Keyframe values must be arrays, even for 1-D properties.**
    Rotation/opacity keyframes need `s: [0]`, not `s: 0` — a scalar

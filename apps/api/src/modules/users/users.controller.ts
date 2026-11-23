@@ -70,10 +70,7 @@ export class UsersController {
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get the public profile of any user (privacy-filtered).' })
-  getPublicUser(
-    @CurrentUser() viewer: RequestUser | undefined,
-    @Param() params: IdParamDto
-  ) {
+  getPublicUser(@CurrentUser() viewer: RequestUser | undefined, @Param() params: IdParamDto) {
     return this.users.getPublicUser(viewer?.sub ?? null, params.id);
   }
 

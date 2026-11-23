@@ -30,8 +30,8 @@ chart with a highlighted zone), and 50 LIVE chart items
 
 ## 1. What Step 6 is (and is not)
 
-| Duel                 | Type              | Rated?                    | Format                                                                                       |
-| -------------------- | ----------------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
+| Duel                 | Type              | Rated?                    | Format                                                                                        |
+| -------------------- | ----------------- | ------------------------- | --------------------------------------------------------------------------------------------- |
 | Chart Detective (L4) | Live head-to-head | **Yes** — Learning Rating | 5 fictional charts, 30 sec each, same charts, read the chart and pick the best interpretation |
 
 Not in this step: Paper Trading Sprint (T1), any other trading
@@ -63,30 +63,30 @@ Case bot duels); Kabir still hosts.
 **Reused unchanged** — one gateway, one engine, one settlement
 path (docs/09 §2.1/§2.2, docs/10 §2.1, docs/12 §2.1):
 
-| Piece             | File                                            | Reused how                                                                                                                            |
-| ----------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| WebSocket gateway | `live-duels.gateway.ts`                         | Same namespace `/duels-live`, same auth, same rooms, same handlers — no new handler at all (§3)                                        |
-| Live engine       | `live-duel-engine.service.ts`                   | Same state machine, timers, grading, reveal, disconnect/forfeit, settlement, rematch — parameterised by the variant config (§4, §7)      |
-| Matchmaking       | `live-matchmaking.service.ts`                   | Same windows, same 5 s sweep, same 30 s bot offer — run per variant queue (`live:queue:CHART`)                                         |
-| State helpers     | `live-duel-state.ts`                            | Same keys, same `scoresOf` — state parse keeps the CHART variant instead of defaulting to LIVE                                         |
-| Rating path       | `RatingsService.recordDuel` / `recordDuelVsBot` | Same idempotency key `duel:{duelId}`, same XP values, same stored-result shape (+ `chart` + `annotation` per question)                  |
-| Redis adapter     | `live-redis.adapter.ts`                         | Same optional multi-server fan-out, same limits (single-server tested)                                                                |
+| Piece             | File                                            | Reused how                                                                                                                                           |
+| ----------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WebSocket gateway | `live-duels.gateway.ts`                         | Same namespace `/duels-live`, same auth, same rooms, same handlers — no new handler at all (§3)                                                      |
+| Live engine       | `live-duel-engine.service.ts`                   | Same state machine, timers, grading, reveal, disconnect/forfeit, settlement, rematch — parameterised by the variant config (§4, §7)                  |
+| Matchmaking       | `live-matchmaking.service.ts`                   | Same windows, same 5 s sweep, same 30 s bot offer — run per variant queue (`live:queue:CHART`)                                                       |
+| State helpers     | `live-duel-state.ts`                            | Same keys, same `scoresOf` — state parse keeps the CHART variant instead of defaulting to LIVE                                                       |
+| Rating path       | `RatingsService.recordDuel` / `recordDuelVsBot` | Same idempotency key `duel:{duelId}`, same XP values, same stored-result shape (+ `chart` + `annotation` per question)                               |
+| Redis adapter     | `live-redis.adapter.ts`                         | Same optional multi-server fan-out, same limits (single-server tested)                                                                               |
 | Web patterns      | `apps/web/app/duels/case/page.tsx`              | The Chart page models the Case page's stages, socket handling, and result/rematch flow; the question screen is the Stage 1 `ChartQuestion` component |
 
 **New in this step:**
 
-| Piece             | File                                                    | What it does                                                                                                                                                                |
-| ----------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Variant config    | `live-duel-variants.ts`                                 | `CHART` row: `DuelType.CHART`, 5 questions, 30,000 ms, `types: ['CHART_CHOICE']`, mix `{2:1, 3:2, 4:2}`, max 2 per topic, host Kabir + intro line                               |
+| Piece             | File                                                    | What it does                                                                                                                                                                                               |
+| ----------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variant config    | `live-duel-variants.ts`                                 | `CHART` row: `DuelType.CHART`, 5 questions, 30,000 ms, `types: ['CHART_CHOICE']`, mix `{2:1, 3:2, 4:2}`, max 2 per topic, host Kabir + intro line                                                          |
 | Chart scoring     | `duel-scoring.ts`                                       | The standard rule on the 30 s timer (`pointsForAnswer`, no new function) + `decideWinner` (correct count first — same as LIVE/BLITZ); `buildGameStats` splits chart/annotation into each per-question stat |
-| Chart bot         | `bot-simulation.ts`                                     | `simulateChartBot` + `botChartTimeMs`: correct by Rating band, else a uniform wrong interpretation; time 12,000 + difficulty × 2,000 + uniform(0–10,000) ms, clamped 5,000–29,999 ms |
-| Annotation carry  | `live-duel-engine.service.ts`                           | Reveal payload gains `chartExtras.annotation` (from the grading row); per-question stats gain `chart` (public part) + `annotation`                                           |
-| Repository        | `duels.repository.ts`                                   | `findActiveLiveDuelForUser` includes `DuelType.CHART`; `duels.service.ts` history + stored-result branches include CHART                                                     |
-| Schema            | `prisma/schema.prisma` + migration 0010 (amended)       | `DuelType.CHART` (the `chart` JSONB column was Stage 1)                                                                                                                     |
-| Shared constants  | `packages/shared/src/constants.ts`                      | `DUELS.CHART_*` tunables (count, mix, per-topic cap — host, types, and timer already existed from Stage 1)                                                                  |
-| Config            | `apps/api/src/config/configuration.ts` + `.env.example` | `CHART_QUESTION_MS` (default 30,000)                                                                                                                                       |
-| Web page          | `apps/web/app/duels/chart/page.tsx`                     | Queue → countdown → `ChartQuestion` → reveal with the annotation → result + rematch                                                                                         |
-| Result view delta | `apps/web/app/duels/result-view.tsx` + `lib/api.ts`     | Annotated chart display per question (reuses the Stage 1 `ChartSvg` + `TREND_LABEL`); `CHART` in result/history types, `chart` + `annotation` on `DuelPerQuestion`          |
+| Chart bot         | `bot-simulation.ts`                                     | `simulateChartBot` + `botChartTimeMs`: correct by Rating band, else a uniform wrong interpretation; time 12,000 + difficulty × 2,000 + uniform(0–10,000) ms, clamped 5,000–29,999 ms                       |
+| Annotation carry  | `live-duel-engine.service.ts`                           | Reveal payload gains `chartExtras.annotation` (from the grading row); per-question stats gain `chart` (public part) + `annotation`                                                                         |
+| Repository        | `duels.repository.ts`                                   | `findActiveLiveDuelForUser` includes `DuelType.CHART`; `duels.service.ts` history + stored-result branches include CHART                                                                                   |
+| Schema            | `prisma/schema.prisma` + migration 0010 (amended)       | `DuelType.CHART` (the `chart` JSONB column was Stage 1)                                                                                                                                                    |
+| Shared constants  | `packages/shared/src/constants.ts`                      | `DUELS.CHART_*` tunables (count, mix, per-topic cap — host, types, and timer already existed from Stage 1)                                                                                                 |
+| Config            | `apps/api/src/config/configuration.ts` + `.env.example` | `CHART_QUESTION_MS` (default 30,000)                                                                                                                                                                       |
+| Web page          | `apps/web/app/duels/chart/page.tsx`                     | Queue → countdown → `ChartQuestion` → reveal with the annotation → result + rematch                                                                                                                        |
+| Result view delta | `apps/web/app/duels/result-view.tsx` + `lib/api.ts`     | Annotated chart display per question (reuses the Stage 1 `ChartSvg` + `TREND_LABEL`); `CHART` in result/history types, `chart` + `annotation` on `DuelPerQuestion`                                         |
 
 ### 2.2 Data flow (one chart, end to end)
 
@@ -104,7 +104,7 @@ path (docs/09 §2.1/§2.2, docs/10 §2.1, docs/12 §2.1):
 3. A player picks an interpretation. The web page sends
    `live:answer` at once. The engine grades from the grading
    rows (`getItemsForGrading`): `pointsForAnswer(correct, timeMs,
-   30,000)`, stores the answer row, and emits `live:score`
+30,000)`, stores the answer row, and emits `live:score`
    (scores only).
 4. When both players have answered — or the 30 s timer fires —
    the engine reveals: `live:reveal` with the annotation (the
@@ -113,8 +113,8 @@ path (docs/09 §2.1/§2.2, docs/10 §2.1, docs/12 §2.1):
 5. After the 5th reveal, the engine settles (§10): Ratings first
    (`recordDuel` / `recordDuelVsBot`, idempotency key
    `duel:{duelId}`), then duel rows + both `DuelGameResult` rows
-   + XP in one transaction, then `live:finished` + the rematch
-   offer.
+   - XP in one transaction, then `live:finished` + the rematch
+     offer.
 
 ## 3. WebSocket event contract — full, with deltas from Phase 5/6/7
 
@@ -125,32 +125,32 @@ annotation are never returned before reveal.
 
 ### Client → server
 
-| Event              | Payload                           | Ack                                                      | Notes                                                                                                                                                    |
-| ------------------ | --------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `live:join-queue`  | `{ variant: 'CHART' }`            | `{ ok, variant: 'CHART', queuePosition?, ratingWindow? }` | `variant` is always sent explicitly (the server defaults an omitted variant to `LIVE`). Unknown variant → `{ ok: false, code: 'VALIDATION_FAILED' }`.    |
-| `live:leave-queue` | `{}`                              | `{ ok }`                                                 | —                                                                                                                                                      |
-| `live:accept-bot`  | `{}`                              | `{ ok, opponent: 'BOT', variant: 'CHART' }`              | Only after the 30 s `live:bot-offer`.                                                                                                                    |
-| `live:answer`      | `{ duelId, questionId, optionId }` | `{ ok, accepted, points? }`                              | The action. Sent the moment it is picked. First answer only, current question only, before the 30 s deadline.                                            |
-| `live:leave-duel`  | `{ duelId }`                      | `{ ok }`                                                 | Counts as a loss (forfeit).                                                                                                                              |
-| `live:rematch`     | `{ duelId }`                      | `{ ok, matched?, reason?, retryAfterMs? }`               | 5-minute cooldown, per pair per variant (`REMATCH_COOLDOWN` + `retryAfterMs` when too soon).                                                             |
+| Event              | Payload                            | Ack                                                       | Notes                                                                                                                                                 |
+| ------------------ | ---------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `live:join-queue`  | `{ variant: 'CHART' }`             | `{ ok, variant: 'CHART', queuePosition?, ratingWindow? }` | `variant` is always sent explicitly (the server defaults an omitted variant to `LIVE`). Unknown variant → `{ ok: false, code: 'VALIDATION_FAILED' }`. |
+| `live:leave-queue` | `{}`                               | `{ ok }`                                                  | —                                                                                                                                                     |
+| `live:accept-bot`  | `{}`                               | `{ ok, opponent: 'BOT', variant: 'CHART' }`               | Only after the 30 s `live:bot-offer`.                                                                                                                 |
+| `live:answer`      | `{ duelId, questionId, optionId }` | `{ ok, accepted, points? }`                               | The action. Sent the moment it is picked. First answer only, current question only, before the 30 s deadline.                                         |
+| `live:leave-duel`  | `{ duelId }`                       | `{ ok }`                                                  | Counts as a loss (forfeit).                                                                                                                           |
+| `live:rematch`     | `{ duelId }`                       | `{ ok, matched?, reason?, retryAfterMs? }`                | 5-minute cooldown, per pair per variant (`REMATCH_COOLDOWN` + `retryAfterMs` when too soon).                                                          |
 
 ### Server → client
 
-| Event                                                      | Payload                                                                                                                                                                                                                                                                                  | Notes                                                                                                                                                                             |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `live:queued`                                              | `{ variant: 'CHART', ratingWindow, queuePosition? }`                                                                                                                                                                                                                                       | —                                                                                                                                                                                 |
-| `live:queue-left`                                          | `{}`                                                                                                                                                                                                                                                                                     | —                                                                                                                                                                                 |
-| `live:bot-offer`                                           | `{}`                                                                                                                                                                                                                                                                                     | After 30 s with no human match.                                                                                                                                                   |
-| `live:matched`                                             | `{ duelId, variant: 'CHART', opponent: { displayName, rating, kind }, host: { name: 'Kabir', line }, questionCount: 5, timeLimitMs: 30000, countdownEndsAtMs }`                                                                                                                             | Host line is Kabir's intro (§1).                                                                                                                                                   |
-| `live:countdown`                                           | `{ countdownEndsAtMs }`                                                                                                                                                                                                                                                                    | 3 s.                                                                                                                                                                              |
-| `live:question`                                            | `{ duelId, index, total: 5, question: { id, type: 'CHART_CHOICE', stem, options: [{ id, text, order }], chart: { title, instrument, template, xLabel, yLabel, xLabels, series } }, deadlineMs, timeLimitMs: 30000, serverNowMs }`                                                                 | 4 options. Never `isCorrect`, `annotation`, or `explanation`.                                                                                                                     |
-| `live:score`                                               | `{ scores: { playerA: { userId, score, correct }, playerB: { userId, score, correct } \| null } }`                                                                                                                                                                                        | Scores only — no answers, no streak.                                                                                                                                               |
-| `live:answer-accepted`                                     | `{ questionId, index }`                                                                                                                                                                                                                                                                    | Correctness arrives only at reveal.                                                                                                                                                 |
-| `live:reveal`                                              | `{ duelId, index, questionId, correctOptionId, correctOptionText, explanation, annotation, myCorrect, mySkipped, myOptionId, myPoints, scores }`                                                                                                                                          | **Extended for Chart.** `annotation` is the trend + highlighted zone (e.g. `{ trend: 'rising', zoneStart: 0, zoneEnd: 5 }`), so the page can highlight the trend line / risk zone. |
-| `live:opponent-disconnected` / `live:opponent-reconnected` | `{ userId }`                                                                                                                                                                                                                                                                               | 15 s grace, then forfeit (§9).                                                                                                                                                     |
-| `live:rematch-requested`                                   | `{ duelId, userId }`                                                                                                                                                                                                                       | —                                                                                                                                                                                 |
-| `live:finished`                                            | `{ duelId, type: 'CHART', result, score, opponent, correct, wrong, skipped, accuracy, avgTimeMs, fastestTimeMs, slowestTimeMs, bestStreak, perTopic, perQuestion, ratingBefore, ratingAfter, ratingDelta, ratingReason, xp, finishedAt, host: { name: 'Kabir', line } }`                         | Same stored-result shape as Phase 4/5; each `perQuestion` entry carries `chart` + `annotation`.                                                                                     |
-| `live:error`                                               | `{ message, code? }`                                                                                                                                                                                                                       | —                                                                                                                                                                                 |
+| Event                                                      | Payload                                                                                                                                                                                                                                                                  | Notes                                                                                                                                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `live:queued`                                              | `{ variant: 'CHART', ratingWindow, queuePosition? }`                                                                                                                                                                                                                     | —                                                                                                                                                                                  |
+| `live:queue-left`                                          | `{}`                                                                                                                                                                                                                                                                     | —                                                                                                                                                                                  |
+| `live:bot-offer`                                           | `{}`                                                                                                                                                                                                                                                                     | After 30 s with no human match.                                                                                                                                                    |
+| `live:matched`                                             | `{ duelId, variant: 'CHART', opponent: { displayName, rating, kind }, host: { name: 'Kabir', line }, questionCount: 5, timeLimitMs: 30000, countdownEndsAtMs }`                                                                                                          | Host line is Kabir's intro (§1).                                                                                                                                                   |
+| `live:countdown`                                           | `{ countdownEndsAtMs }`                                                                                                                                                                                                                                                  | 3 s.                                                                                                                                                                               |
+| `live:question`                                            | `{ duelId, index, total: 5, question: { id, type: 'CHART_CHOICE', stem, options: [{ id, text, order }], chart: { title, instrument, template, xLabel, yLabel, xLabels, series } }, deadlineMs, timeLimitMs: 30000, serverNowMs }`                                        | 4 options. Never `isCorrect`, `annotation`, or `explanation`.                                                                                                                      |
+| `live:score`                                               | `{ scores: { playerA: { userId, score, correct }, playerB: { userId, score, correct } \| null } }`                                                                                                                                                                       | Scores only — no answers, no streak.                                                                                                                                               |
+| `live:answer-accepted`                                     | `{ questionId, index }`                                                                                                                                                                                                                                                  | Correctness arrives only at reveal.                                                                                                                                                |
+| `live:reveal`                                              | `{ duelId, index, questionId, correctOptionId, correctOptionText, explanation, annotation, myCorrect, mySkipped, myOptionId, myPoints, scores }`                                                                                                                         | **Extended for Chart.** `annotation` is the trend + highlighted zone (e.g. `{ trend: 'rising', zoneStart: 0, zoneEnd: 5 }`), so the page can highlight the trend line / risk zone. |
+| `live:opponent-disconnected` / `live:opponent-reconnected` | `{ userId }`                                                                                                                                                                                                                                                             | 15 s grace, then forfeit (§9).                                                                                                                                                     |
+| `live:rematch-requested`                                   | `{ duelId, userId }`                                                                                                                                                                                                                                                     | —                                                                                                                                                                                  |
+| `live:finished`                                            | `{ duelId, type: 'CHART', result, score, opponent, correct, wrong, skipped, accuracy, avgTimeMs, fastestTimeMs, slowestTimeMs, bestStreak, perTopic, perQuestion, ratingBefore, ratingAfter, ratingDelta, ratingReason, xp, finishedAt, host: { name: 'Kabir', line } }` | Same stored-result shape as Phase 4/5; each `perQuestion` entry carries `chart` + `annotation`.                                                                                    |
+| `live:error`                                               | `{ message, code? }`                                                                                                                                                                                                                                                     | —                                                                                                                                                                                  |
 
 ## 4. REST endpoints (`/api/v1/duels`)
 
@@ -158,12 +158,12 @@ No new REST endpoints. The four Phase 5 live endpoints are
 variant-aware and their OpenAPI descriptions now mention Chart
 Detective (CHART):
 
-| Endpoint                 | Chart behaviour                                                                  |
-| ------------------------ | -------------------------------------------------------------------------------- |
+| Endpoint                 | Chart behaviour                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------- |
 | `GET /live/queue/status` | Returns `variant: 'CHART'` while queued for a Chart Detective duel (`null` when not queued). |
-| `GET /live/active`       | Returns the active CHART duel (type `'CHART'`, `timeLimitMs` 30000) or `null`.   |
-| `GET /live/:id/state`    | Returns the CHART duel state (`variant: 'CHART'`, `timeLimitMs` 30000).         |
-| `POST /live/:id/forfeit` | Forfeits a CHART duel the same way as LIVE/BLITZ/CASE.                          |
+| `GET /live/active`       | Returns the active CHART duel (type `'CHART'`, `timeLimitMs` 30000) or `null`.               |
+| `GET /live/:id/state`    | Returns the CHART duel state (`variant: 'CHART'`, `timeLimitMs` 30000).                      |
+| `POST /live/:id/forfeit` | Forfeits a CHART duel the same way as LIVE/BLITZ/CASE.                                       |
 
 ## 5. CHART_CHOICE format + generator (Stage 1, summarised)
 
@@ -172,8 +172,8 @@ Stage 1 (full detail in the Stage 1 handoff notes
 
 - **Shape (binding).** `DuelBankItem.chart` is
   `{ title, instrument, template, xLabel, yLabel, xLabels[6],
-  series[6], annotation: { trend: 'rising' | 'falling' | 'flat' |
-  'volatile', zoneStart: 0..5, zoneEnd: 0..5 } }`. The public view
+series[6], annotation: { trend: 'rising' | 'falling' | 'flat' |
+'volatile', zoneStart: 0..5, zoneEnd: 0..5 } }`. The public view
   strips the annotation; grading uses `getItemsForGrading`
   (full rows with annotation).
 - **Templates (5).** STEADY_RISE (rising, 0–5),
@@ -181,8 +181,8 @@ Stage 1 (full detail in the Stage 1 handoff notes
   (volatile, 0–2), STEADY_FALL (falling, 0–5), SPIKE_THEN_FALL
   (volatile, peak ±1). Ten items per template in the seed bank.
 - **Generator.** `chart-generator.ts`: deterministic (mulberry32
-  + FNV-1a) — the same (seed, template) always builds the same
-  chart, so a seeded chart is reproducible and testable.
+  - FNV-1a) — the same (seed, template) always builds the same
+    chart, so a seeded chart is reproducible and testable.
 - **Validation (binding).** Skill CHART_READING only,
   difficulty 2–4, exactly 4 options / exactly 1 correct, NO
   per-option points, explanation 1–3 sentences, no real-ticker
@@ -211,13 +211,13 @@ CHART options carry no per-option points (the bank forbids
 them), so there is no partial credit — a wrong chart read is a
 wrong answer, full stop.
 
-| Answer   | Time      | Points         |
-| -------- | --------- | -------------- |
-| Correct  | 0 ms      | 150 (100 + 50) |
-| Correct  | 15,000 ms | 125 (100 + 25) |
-| Correct  | 30,000 ms | 100 (100 + 0)  |
-| Wrong    | any       | 0              |
-| Skipped  | —         | 0              |
+| Answer  | Time      | Points         |
+| ------- | --------- | -------------- |
+| Correct | 0 ms      | 150 (100 + 50) |
+| Correct | 15,000 ms | 125 (100 + 25) |
+| Correct | 30,000 ms | 100 (100 + 0)  |
+| Wrong   | any       | 0              |
+| Skipped | —         | 0              |
 
 **Winner** (`decideWinner`): more correct readings wins, then
 lower total answer time, else a draw — the same as Speed Quiz
@@ -395,30 +395,30 @@ settlement is idempotent (stored result replay; ledger-keyed XP;
   `{2:1,3:2,4:2}`, max 2/topic, host Kabir, intro line); Chart
   scoring worked examples (§6) + `decideWinner` (correct count
   first — 3 correct beats 2 correct despite the faster player)
-  + chart + annotation carried into the stored per-question
-  stat; Chart bot simulation (determinism; times in [5000,
-  29999] and slower on harder charts and slower than the quiz
-  bot; points ≤ 150; correct rate near base 0.55 at rating 1000
-  with no difficulty adjustment — d2 vs d4 rates within 0.05;
-  stronger player faces sharper Mira); Chart queue separation
-  (a CHART waiter never matches LIVE/BLITZ/CASE); gateway
-  (`live:join-queue` CHART acceptance, Kabir host); engine
-  (duel creation + Kabir matched payload + 30 s deadline;
-  answer after 30 s rejected; scoring + annotation in reveal;
-  winner by correct count; Chart bot duel; Chart rematch
-  replays CHART).
+  - chart + annotation carried into the stored per-question
+    stat; Chart bot simulation (determinism; times in [5000,
+    29999] and slower on harder charts and slower than the quiz
+    bot; points ≤ 150; correct rate near base 0.55 at rating 1000
+    with no difficulty adjustment — d2 vs d4 rates within 0.05;
+    stronger player faces sharper Mira); Chart queue separation
+    (a CHART waiter never matches LIVE/BLITZ/CASE); gateway
+    (`live:join-queue` CHART acceptance, Kabir host); engine
+    (duel creation + Kabir matched payload + 30 s deadline;
+    answer after 30 s rejected; scoring + annotation in reveal;
+    winner by correct count; Chart bot duel; Chart rematch
+    replays CHART).
 - **E2E: 116/116** (baseline 113; +3 new). Chart happy path —
   queue → match (variant CHART, 5 charts, host Kabir) → 5 charts
   (question payload carries `chart` without `annotation` /
   `isCorrect` / `explanation`, `timeLimitMs` 3000) → A correct
   every time, B wrong every time → reveal carries the annotation
-  + explanation → settle + rate once (ratingDelta 20, one rated
-  event each, type `'CHART'` in result/history; stored
-  per-question stats carry `chart` + `annotation`). Chart queue
-  separation (CHART waiter never matches a LIVE waiter; second
-  CHART waiter pairs; LIVE waiter stays queued). Chart bot duel
-  via the 30 s offer (accept Mira, play 5 charts, settle, one
-  rated event). First full run clean — no flake this time.
+  - explanation → settle + rate once (ratingDelta 20, one rated
+    event each, type `'CHART'` in result/history; stored
+    per-question stats carry `chart` + `annotation`). Chart queue
+    separation (CHART waiter never matches a LIVE waiter; second
+    CHART waiter pairs; LIVE waiter stays queued). Chart bot duel
+    via the 30 s offer (accept Mira, play 5 charts, settle, one
+    rated event). First full run clean — no flake this time.
 - **E2E seed + fakes:** 18 CHART_CHOICE items (3 topics × 3
   difficulties × 2 copies, mirroring the Stage 1 item's shape —
   instrument 'Meadow Foods', template STEADY_RISE, series
@@ -432,7 +432,7 @@ settlement is idempotent (stored result replay; ledger-keyed XP;
   the Chart duel tests both hold whichever LIVE CHART item the
   random selection picks.
 - **Web:** typecheck clean, lint clean (`eslint app
-  --max-warnings=0`), prettier clean on the new/changed files.
+--max-warnings=0`), prettier clean on the new/changed files.
   API typecheck / lint / format clean; `prisma validate` clean.
 - **Fixes found during the build (pre-existing).** The Stage 1
   seed file imported `ChartTemplateKey` from

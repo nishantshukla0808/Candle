@@ -117,32 +117,32 @@ internals (blueprint §2.5).
 
 ### Client → server
 
-| Event | Payload | Behaviour |
-| --- | --- | --- |
-| `sprint:join-queue` | `{}` (no payload) | Enqueue on the Trading Rating. Emits `sprint:queued` + starts the 30 s bot-offer timer. Already queued / active sprint / active live duel → 409 ack. |
-| `sprint:leave-queue` | `{}` | Dequeue. Emits `sprint:queue-left`. Idempotent. |
-| `sprint:accept-bot` | `{}` | Only after 30 s in the queue (`SPRINT_NOT_IN_QUEUE` before). Creates the bot sprint, emits `sprint:matched` + `sprint:countdown`. |
-| `sprint:order` | `{ duelId, instrumentId, side: BUY \| SELL, quantity: 1–100000, clientOrderId: UUID }` | Server-priced order (§5). Ack carries the order + the player's portfolio. A retried `clientOrderId` replays. |
-| `sprint:leave-sprint` | `{ duelId }` | Voluntary forfeit — settles immediately (§9). |
-| `sprint:rematch` | `{ duelId }` | Both players must ask; 5-minute cooldown per pair. Second ask creates the new sprint. Bot sprints: `BOT_NO_REMATCH`. |
+| Event                 | Payload                                                                                | Behaviour                                                                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sprint:join-queue`   | `{}` (no payload)                                                                      | Enqueue on the Trading Rating. Emits `sprint:queued` + starts the 30 s bot-offer timer. Already queued / active sprint / active live duel → 409 ack. |
+| `sprint:leave-queue`  | `{}`                                                                                   | Dequeue. Emits `sprint:queue-left`. Idempotent.                                                                                                      |
+| `sprint:accept-bot`   | `{}`                                                                                   | Only after 30 s in the queue (`SPRINT_NOT_IN_QUEUE` before). Creates the bot sprint, emits `sprint:matched` + `sprint:countdown`.                    |
+| `sprint:order`        | `{ duelId, instrumentId, side: BUY \| SELL, quantity: 1–100000, clientOrderId: UUID }` | Server-priced order (§5). Ack carries the order + the player's portfolio. A retried `clientOrderId` replays.                                         |
+| `sprint:leave-sprint` | `{ duelId }`                                                                           | Voluntary forfeit — settles immediately (§9).                                                                                                        |
+| `sprint:rematch`      | `{ duelId }`                                                                           | Both players must ask; 5-minute cooldown per pair. Second ask creates the new sprint. Bot sprints: `BOT_NO_REMATCH`.                                 |
 
 ### Server → client
 
-| Event | Payload | Notes |
-| --- | --- | --- |
-| `sprint:queued` | `{ queued, waitedMs, ratingWindow, botOfferDue, host }` | Host is Tara. |
-| `sprint:queue-left` | `{ userId }` | |
-| `sprint:bot-offer` | `{ message, botName: 'Mira' }` | After 30 s in the queue. |
-| `sprint:matched` | `{ duelId, opponent: { userId, displayName, rating, kind }, host, startingCash: '100000.00', instruments: [{ id, symbol, name }], countdownEndsAtMs, serverNowMs }` | Opponent kind is `HUMAN` or `BOT`. |
-| `sprint:countdown` | `{ duelId, countdownEndsAtMs, serverNowMs, host }` | 3 s. |
-| `sprint:started` | `{ duelId, instruments: [{ id, symbol, name, price }], cash, portfolio, startedAtMs, endsAtMs, serverNowMs }` | Per player — own cash + portfolio only. |
-| `sprint:tick` | `{ duelId, serverNowMs, endsAtMs, prices: [{ instrumentId, symbol, price }], equities: { [userId]: { userId, equity } } }` | Prices + both TOTAL equities. Never holdings or orders. |
-| `sprint:order-accepted` | `{ duelId, order, portfolio }` | To the ordering player only. |
-| `sprint:opponent-disconnected` | `{ duelId, userId, graceSeconds: 15 }` | 15 s to reconnect. |
-| `sprint:opponent-reconnected` | `{ duelId, userId }` | |
-| `sprint:rematch-requested` | `{ duelId, fromUserId }` | To the opponent only. |
-| `sprint:finished` | `{ ...SprintResultResponse, host, forfeitedBy }` | The stored result, never recomputed. |
-| `sprint:error` | `{ code, message }` | |
+| Event                          | Payload                                                                                                                                                             | Notes                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `sprint:queued`                | `{ queued, waitedMs, ratingWindow, botOfferDue, host }`                                                                                                             | Host is Tara.                                           |
+| `sprint:queue-left`            | `{ userId }`                                                                                                                                                        |                                                         |
+| `sprint:bot-offer`             | `{ message, botName: 'Mira' }`                                                                                                                                      | After 30 s in the queue.                                |
+| `sprint:matched`               | `{ duelId, opponent: { userId, displayName, rating, kind }, host, startingCash: '100000.00', instruments: [{ id, symbol, name }], countdownEndsAtMs, serverNowMs }` | Opponent kind is `HUMAN` or `BOT`.                      |
+| `sprint:countdown`             | `{ duelId, countdownEndsAtMs, serverNowMs, host }`                                                                                                                  | 3 s.                                                    |
+| `sprint:started`               | `{ duelId, instruments: [{ id, symbol, name, price }], cash, portfolio, startedAtMs, endsAtMs, serverNowMs }`                                                       | Per player — own cash + portfolio only.                 |
+| `sprint:tick`                  | `{ duelId, serverNowMs, endsAtMs, prices: [{ instrumentId, symbol, price }], equities: { [userId]: { userId, equity } } }`                                          | Prices + both TOTAL equities. Never holdings or orders. |
+| `sprint:order-accepted`        | `{ duelId, order, portfolio }`                                                                                                                                      | To the ordering player only.                            |
+| `sprint:opponent-disconnected` | `{ duelId, userId, graceSeconds: 15 }`                                                                                                                              | 15 s to reconnect.                                      |
+| `sprint:opponent-reconnected`  | `{ duelId, userId }`                                                                                                                                                |                                                         |
+| `sprint:rematch-requested`     | `{ duelId, fromUserId }`                                                                                                                                            | To the opponent only.                                   |
+| `sprint:finished`              | `{ ...SprintResultResponse, host, forfeitedBy }`                                                                                                                    | The stored result, never recomputed.                    |
+| `sprint:error`                 | `{ code, message }`                                                                                                                                                 |                                                         |
 
 ## 4. REST endpoints (`/api/v1/sprint`)
 
@@ -151,14 +151,14 @@ disclaimer in their OpenAPI docs. Live trading happens over the
 socket, not over REST — these endpoints exist for page loads,
 reconnect/resume, and clients without a socket.
 
-| Endpoint | Behaviour |
-| --- | --- |
-| `GET /sprint/active` | My active sprint, if any (phase, start/end, my equity, opponent equity). `null` when none. |
-| `GET /sprint/queue/status` | My queue status (waited time, Trading Rating window, bot offer). |
+| Endpoint                         | Behaviour                                                                                                               |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `GET /sprint/active`             | My active sprint, if any (phase, start/end, my equity, opponent equity). `null` when none.                              |
+| `GET /sprint/queue/status`       | My queue status (waited time, Trading Rating window, bot offer).                                                        |
 | `GET /sprint/history?page&limit` | My finished sprints, newest first (result, final equity, return, risk-adjusted score, opponent, Trading Rating change). |
-| `GET /sprint/:id/state` | One sprint's state summary — mine only (404 otherwise). My portfolio + both equities; never the opponent's holdings. |
-| `POST /sprint/:id/forfeit` | Forfeit my sprint (leaving counts as a loss). |
-| `GET /sprint/:id/result` | One sprint's stored result — mine only (403 otherwise). |
+| `GET /sprint/:id/state`          | One sprint's state summary — mine only (404 otherwise). My portfolio + both equities; never the opponent's holdings.    |
+| `POST /sprint/:id/forfeit`       | Forfeit my sprint (leaving counts as a loss).                                                                           |
+| `GET /sprint/:id/result`         | One sprint's stored result — mine only (403 otherwise).                                                                 |
 
 ## 5. Market fairness (same prices for both)
 
@@ -202,13 +202,13 @@ score and the higher return wins; equal on both is a draw.
 
 Worked examples (pinned in `sprint-scoring.spec.ts`):
 
-| Player | R | V | D | Score | Verdict |
-| --- | --- | --- | --- | --- | --- |
-| Steady | +2.0% | 1.0 | 0.5 | 2.0 / 2.5 = **0.80** | **Wins** |
-| Wild | +3.0% | 4.0 | 2.0 | 3.0 / 7.0 ≈ **0.43** | Loses — the higher return does not win |
-| Risky loser | −2.0% | 1.0 | 1.0 | −2.0 × 3.0 = **−6.00** | Loses by more than the calm loser |
-| Calm loser | −2.0% | 0 | 0 | **−2.00** | Loses by exactly the return |
-| No trades | 0% | 0 | 0 | **0** | Draw vs another no-trade sprint |
+| Player      | R     | V   | D   | Score                  | Verdict                                |
+| ----------- | ----- | --- | --- | ---------------------- | -------------------------------------- |
+| Steady      | +2.0% | 1.0 | 0.5 | 2.0 / 2.5 = **0.80**   | **Wins**                               |
+| Wild        | +3.0% | 4.0 | 2.0 | 3.0 / 7.0 ≈ **0.43**   | Loses — the higher return does not win |
+| Risky loser | −2.0% | 1.0 | 1.0 | −2.0 × 3.0 = **−6.00** | Loses by more than the calm loser      |
+| Calm loser  | −2.0% | 0   | 0   | **−2.00**              | Loses by exactly the return            |
+| No trades   | 0%    | 0   | 0   | **0**                  | Draw vs another no-trade sprint        |
 
 Per-instrument summary (`summariseTrades`): realised P&L replays
 the trade log against a running weighted-average cost; a sell
@@ -235,12 +235,12 @@ tests):
 Skill bands by the player's Trading Rating (`SPRINT_BOT_BANDS`):
 
 | Player Trading Rating | Momentum threshold | Buy size (share of cash) |
-| --- | --- | --- |
-| < 1100 | 0.40% | 15% |
-| 1100–1299 | 0.35% | 18% |
-| 1300–1499 | 0.30% | 20% |
-| 1500–1699 | 0.25% | 22% |
-| 1700+ | 0.20% | 25% |
+| --------------------- | ------------------ | ------------------------ |
+| < 1100                | 0.40%              | 15%                      |
+| 1100–1299             | 0.35%              | 18%                      |
+| 1300–1499             | 0.30%              | 20%                      |
+| 1500–1699             | 0.25%              | 22%                      |
+| 1700+                 | 0.20%              | 25%                      |
 
 A stronger player faces a sharper bot. The bot's summary is stored
 on the Duel row (`botScore` = risk score ×1000, `botCorrect` = bot

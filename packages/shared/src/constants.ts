@@ -569,8 +569,7 @@ export const PROFILE_PRIVACY_TOGGLES = [
   'showOnlineStatus',
 ] as const;
 /** Simulator showcase label (docs/06 §1.8, decision 3: ON by default). */
-export const SIM_SHOWCASE_LABEL =
-  'Virtual money only. Not real investing. Not investment advice.';
+export const SIM_SHOWCASE_LABEL = 'Virtual money only. Not real investing. Not investment advice.';
 /** The showcase is a once-per-day snapshot, never a live feed
  * (docs/06 §1.8): one computed row per user per Asia/Kolkata date. */
 export const SIM_SHOWCASE_SNAPSHOT_TIMEZONE = 'Asia/Kolkata';

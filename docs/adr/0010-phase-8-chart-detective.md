@@ -156,13 +156,13 @@ one right reading, so "correct count" is the whole judgement.
 
 Worked examples (pinned in unit tests):
 
-| Answer   | Time      | Points         |
-| -------- | --------- | -------------- |
-| Correct  | 0 ms      | 150 (100 + 50) |
-| Correct  | 15,000 ms | 125 (100 + 25) |
-| Correct  | 30,000 ms | 100 (100 + 0)  |
-| Wrong    | any       | 0              |
-| Skipped  | —         | 0              |
+| Answer  | Time      | Points         |
+| ------- | --------- | -------------- |
+| Correct | 0 ms      | 150 (100 + 50) |
+| Correct | 15,000 ms | 125 (100 + 25) |
+| Correct | 30,000 ms | 100 (100 + 0)  |
+| Wrong   | any       | 0              |
+| Skipped | —         | 0              |
 
 Grading uses `getItemsForGrading` (full rows with chart +
 annotation), never the public view. The annotation is copied into
@@ -373,7 +373,7 @@ by the web step.
   `CHART_QUESTION_MS: '3000'` so a 5-chart duel finishes in
   seconds. First full run clean — see §8.7.
 - Web: typecheck clean, lint clean (`eslint app
-  --max-warnings=0`), prettier clean on the new/changed files.
+--max-warnings=0`), prettier clean on the new/changed files.
   API typecheck / lint / format clean; `prisma validate` clean.
 - Worked examples verified in unit tests (see §4 table); the
   Chart e2e happy path settles with one rated event each, the

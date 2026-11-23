@@ -58,13 +58,13 @@ Phases 0–2. Do not do that for a free tier.
 
 ### Recommended deployment (free where it is safe, cheap where it matters)
 
-| Part | Where | Cost |
-|---|---|---|
-| DNS, CDN, WAF, free SSL, DDoS protection | Cloudflare (free plan) | $0 |
-| Web frontend (Next.js) | Cloudflare Workers / Pages, static + SSR where it fits | $0 on Free, $5/mo Workers Paid when SSR traffic grows |
-| API (NestJS), PostgreSQL, Redis | One small VPS / container host running the existing `docker compose` stack, unchanged | ~$5/mo VPS, or a container host free tier if verified at deploy time (free tiers sleep / expire, so do not rely on them for launch) |
-| File storage | Cloudflare R2 (S3-compatible, 10 GB free tier) via the existing `StorageService` abstraction, later — not in v1 | $0 to start |
-| Domain | Cloudflare Registrar or any registrar, pointed at Cloudflare DNS | Domain cost only |
+| Part                                     | Where                                                                                                           | Cost                                                                                                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| DNS, CDN, WAF, free SSL, DDoS protection | Cloudflare (free plan)                                                                                          | $0                                                                                                                                  |
+| Web frontend (Next.js)                   | Cloudflare Workers / Pages, static + SSR where it fits                                                          | $0 on Free, $5/mo Workers Paid when SSR traffic grows                                                                               |
+| API (NestJS), PostgreSQL, Redis          | One small VPS / container host running the existing `docker compose` stack, unchanged                           | ~$5/mo VPS, or a container host free tier if verified at deploy time (free tiers sleep / expire, so do not rely on them for launch) |
+| File storage                             | Cloudflare R2 (S3-compatible, 10 GB free tier) via the existing `StorageService` abstraction, later — not in v1 | $0 to start                                                                                                                         |
+| Domain                                   | Cloudflare Registrar or any registrar, pointed at Cloudflare DNS                                                | Domain cost only                                                                                                                    |
 
 This keeps the exact system that already runs on Nishu's PC
 (`docker compose up --build`) and puts Cloudflare in front of it
@@ -133,12 +133,12 @@ score about 91% (10:1 odds). A 200-point gap means about 76%.
 
 **K factor — how fast a rating moves:**
 
-| Situation | K |
-|---|---|
-| Provisional (first 10 rated events) | 40 |
-| Established, rating < 1400 | 32 |
-| Established, rating 1400–1799 | 24 |
-| Established, rating 1800+ | 16 |
+| Situation                           | K   |
+| ----------------------------------- | --- |
+| Provisional (first 10 rated events) | 40  |
+| Established, rating < 1400          | 32  |
+| Established, rating 1400–1799       | 24  |
+| Established, rating 1800+           | 16  |
 
 A high K for beginners lets a good new user climb quickly; a low K
 for experts stops one lucky result from moving a Master rating by 30
@@ -159,6 +159,7 @@ A is 1200, B is 1400, K = 32 for both.
 ### 5. What counts as a rated event (and what does not)
 
 **Learning Rating — rated events are duels only:**
+
 - A learning duel: two users, same set of questions, same time limit.
   Winner/loser/draw from correct answers, then speed as tie-break.
 - Practice quizzes, lesson quizzes, and daily challenges give XP and
@@ -166,6 +167,7 @@ A is 1200, B is 1400, K = 32 for both.
   easy questions to inflate a rating.
 
 **Trading Rating — rated events are weekly seasons only:**
+
 - One season = one calendar week (Mon 00:00 IST to Sun 23:59 IST).
 - At season end, each active user's portfolio return is compared with
   the simulated market index return for that week.
@@ -180,6 +182,7 @@ A is 1200, B is 1400, K = 32 for both.
   how many trades they made. This stops trade-spamming.
 
 **Anti-gaming rules (all enforced in code, not in the UI):**
+
 - Rated duels have a cooldown and a daily cap; the same pair cannot
   farm each other repeatedly.
 - Trading rating ignores trade size below a minimum and ignores

@@ -176,13 +176,13 @@ export class SimulatorService {
       valued.push({ symbol: instrument.symbol, marketValue });
     }
     valued.sort((a, b) => b.marketValue.comparedTo(a.marketValue));
-    const returnPct = Number(
-      equity.sub(STARTING_CASH).div(STARTING_CASH).mul(100).toFixed(2)
-    );
+    const returnPct = Number(equity.sub(STARTING_CASH).div(STARTING_CASH).mul(100).toFixed(2));
     return {
       totalEquity: fmt(equity),
       returnPct,
-      topHoldings: valued.slice(0, 3).map((v) => ({ symbol: v.symbol, marketValue: fmt(v.marketValue) })),
+      topHoldings: valued
+        .slice(0, 3)
+        .map((v) => ({ symbol: v.symbol, marketValue: fmt(v.marketValue) })),
     };
   }
 
