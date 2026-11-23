@@ -31,6 +31,9 @@ export interface RefreshTokenRow {
   familyId: string;
   expiresAt: Date;
   revokedAt: Date | null;
+  userAgent: string | null;
+  createdAt: Date;
+  updatedAt: Date;
   user: User;
 }
 
@@ -67,6 +70,19 @@ export class AuthRepository {
     await this.db(tx).user.update({
       where: { id: userId },
       data: { emailVerifiedAt: new Date() },
+    });
+  }
+
+  /**
+   * Cancels a deletion in its grace period (Phase 13, ADR 0015 §8):
+   * clears the deactivation + the deletion timestamps. Used by login
+   * (a login inside the grace cancels the deletion) and by the
+   * settings cancel endpoint via SettingsRepository.
+   */
+  async cancelDeletion(userId: string, tx?: TxClient): Promise<void> {
+    await this.db(tx).user.update({
+      where: { id: userId },
+      data: { deletedAt: null, deletionRequestedAt: null, deletionScheduledAt: null },
     });
   }
 
@@ -108,7 +124,7 @@ export class AuthRepository {
   // --- refresh tokens (rotation families) -------------------------------------
 
   async createRefreshToken(
-    input: { userId: string; familyId: string; tokenHash: string; expiresAt: Date },
+    input: { userId: string; familyId: string; tokenHash: string; expiresAt: Date; userAgent?: string | null },
     tx?: TxClient
   ): Promise<void> {
     await this.db(tx).refreshToken.create({ data: input });
@@ -132,6 +148,25 @@ export class AuthRepository {
   async revokeFamily(familyId: string, tx?: TxClient): Promise<void> {
     await this.db(tx).refreshToken.updateMany({
       where: { familyId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  /** All refresh-token rows for the user, newest first (settings session list). */
+  async listRefreshTokensByUser(userId: string, tx?: TxClient): Promise<RefreshTokenRow[]> {
+    return this.db(tx).refreshToken.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: { user: true },
+    });
+  }
+
+  /** Revokes every family except one — password change / "revoke all
+   * other sessions" (Phase 13, ADR 0015 §6). The kept family stays
+   * signed in; every other device is logged out. */
+  async revokeAllExceptFamily(userId: string, familyId: string, tx?: TxClient): Promise<void> {
+    await this.db(tx).refreshToken.updateMany({
+      where: { userId, familyId: { not: familyId }, revokedAt: null },
       data: { revokedAt: new Date() },
     });
   }

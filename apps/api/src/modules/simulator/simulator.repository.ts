@@ -79,6 +79,13 @@ export class SimulatorRepository {
 
   // --- portfolio ---------------------------------------------------------------
 
+  /** Find-only read: returns null when the user never opened the simulator.
+   * The profile showcase uses this (never getOrCreate — a profile read
+   * must not create a portfolio, ADR 0015 §4). */
+  async findPortfolioByUser(userId: string, tx?: TxClient): Promise<PortfolioRow | null> {
+    return this.db(tx).simPortfolio.findUnique({ where: { userId } });
+  }
+
   /**
    * Get-or-create: one portfolio per user. The unique(userId) constraint
    * makes concurrent creation safe — the loser reads the winner's row.

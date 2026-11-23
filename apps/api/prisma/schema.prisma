@@ -52,6 +52,20 @@ model User {
 
   countryCode          String?
   countryCodeChangedAt DateTime?
+  /// Phase 13 (docs/06 §1.3, ADR 0015 §2/§4): country is LOCKED after
+  /// signup (decision 4) — countryCode is never written by PATCH
+  /// /users/me any more, and countryCodeChangedAt is no longer updated.
+  /// The column stays so existing rows keep their value; the signup
+  /// flow that sets it (mobile number code) is a follow-up (ADR 0015 §10).
+  bio                  String?
+  profileVisibility    ProfileVisibility @default(PUBLIC)
+  /// Last display-name change (docs/06 §1.3): max 1 change per 30 days.
+  displayNameChangedAt DateTime?
+  /// DPDP delete (docs/06 §2.6, ADR 0015 §8): deletionRequestedAt is
+  /// set together with deletedAt (deactivation); deletionScheduledAt
+  /// is requestedAt + 30 days (hard-delete, future scheduler job).
+  deletionRequestedAt  DateTime?
+  deletionScheduledAt  DateTime?
   ratings              UserRating[]
   ratingHistory        RatingHistory[]
   questionExposures    UserQuestionExposure[]
@@ -66,6 +80,11 @@ model User {
   weeklyMemberships    WeeklyLeagueMembership[]
   weeklyTrades         WeeklyTrade[]
   weeklyResults        WeeklyResult[]
+  privacySettings      UserPrivacySettings?
+  settings             UserSettings?
+  notificationPrefs    NotificationPreference[]
+  dataExports          DataExport[]
+  showcaseSnapshot     SimShowcaseSnapshot?
 
   @@index([email])
   @@map("users")
@@ -81,6 +100,11 @@ model RefreshToken {
   tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
+  /// Phase 13 (ADR 0015 §6): the User-Agent string presented when the
+  /// family was created / last rotated, so the session list can show a
+  /// device/browser label. Null for families created before this phase.
+  /// No IP is stored (privacy: city/country from IP is deferred).
+  userAgent String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -1454,4 +1478,163 @@ model WeeklyResult {
   @@index([seasonId, leagueId])
   @@index([userId, createdAt])
   @@map("weekly_results")
+}
+
+// --- Profiles + Settings (Phase 13, docs/06 §1–§2, docs/18, ADR 0015) --------
+// Profiles extend the existing users module (they do not replace it):
+// bio / visibility / display-name cooldown live on User; the granular
+// privacy toggles live in UserPrivacySettings. Settings live in
+// UserSettings + NotificationPreference. Friends/chat, communities,
+// post-game-stats rebuild, and BlockedUser are NOT built here (ADR 0015
+// §10) — there are no tables for them in this phase.
+
+/// Profile visibility (docs/06 §1.2). FRIENDS behaves as PRIVATE until
+/// the friends phase lands, because no friend list exists to check
+/// against yet (ADR 0015 §1) — fail closed, never fail open.
+enum ProfileVisibility {
+  PUBLIC
+  FRIENDS
+  PRIVATE
+}
+
+/// Appearance theme (docs/06 §2.4). Default SYSTEM.
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum FontSize {
+  NORMAL
+  LARGE
+}
+
+/// Notification types (docs/06 §2.3 table). One preference row per
+/// (user, type); defaults live in shared NOTIFICATION_DEFAULTS and are
+/// applied on read when no row exists yet (no write on GET).
+enum NotificationType {
+  DUEL_INVITE
+  DUEL_RESULT
+  REMATCH_REQUEST
+  FRIEND_REQUEST
+  NEW_MESSAGE
+  COMMUNITY_REPLY
+  COMMUNITY_MENTION
+  STREAK_REMINDER
+  WEEKLY_LEAGUE_RESULT
+  SEASON_EVENT
+  NEW_LESSON
+  PRODUCT_NEWS
+}
+
+/// Granular privacy toggles (docs/06 §1.5). One row per user, created
+/// lazily with all toggles ON (the PUBLIC default). If a toggle is OFF
+/// the API returns null for that section, never an empty list. The
+/// main visibility switch gates everything first; switching to PRIVATE
+/// does NOT rewrite these toggles (ADR 0015 §1).
+model UserPrivacySettings {
+  id                          String   @id @default(uuid()) @db.Uuid
+  userId                      String   @unique @db.Uuid
+  user                        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showRatings                 Boolean  @default(true)
+  showRank                    Boolean  @default(true)
+  showLearningProgress        Boolean  @default(true)
+  showDuelHistory             Boolean  @default(true)
+  showSimulatorShowcase       Boolean  @default(true)
+  showBadges                  Boolean  @default(true)
+  showFriendsList             Boolean  @default(true)
+  allowFriendRequests         Boolean  @default(true)
+  allowChallengesFromStrangers Boolean @default(true)
+  showOnlineStatus            Boolean  @default(true)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@map("user_privacy_settings")
+}
+
+/// Account + appearance + notification-delivery settings (docs/06 §2).
+/// One row per user, created lazily with the documented defaults.
+/// language/timezone live ONLY here (ADR 0015 §7): the User model has
+/// no timezone/language columns, so there is exactly one owner.
+/// Streaks are still computed in Asia/Kolkata by the existing
+/// StreakService — timezone here changes display times and the
+/// streak-reminder time only (docs/06 §2.5).
+model UserSettings {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @db.Uuid
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme                 Theme    @default(SYSTEM)
+  fontSize              FontSize @default(NORMAL)
+  reduceMotion          Boolean  @default(false)
+  /// 'en' only in v1 (allowlist enforced in the service).
+  language              String   @default("en")
+  /// IANA name, e.g. "Asia/Kolkata". Validated in the service.
+  timezone              String   @default("Asia/Kolkata")
+  /// "HH:MM" in the user's timezone. No push in quiet hours.
+  quietHoursStart       String   @default("22:00")
+  quietHoursEnd         String   @default("08:00")
+  streakReminderEnabled Boolean  @default(true)
+  /// "HH:MM" in the user's timezone. Max 1 reminder per day.
+  streakReminderTime    String   @default("19:00")
+  /// Marketing consent, OFF by default, withdrawable any time.
+  marketingConsent      Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+/// One notification preference per (user, type) (docs/06 §2.3).
+/// Absent rows mean "use NOTIFICATION_DEFAULTS" — reads never write.
+model NotificationPreference {
+  id       String           @id @default(uuid()) @db.Uuid
+  userId   String           @db.Uuid
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type     NotificationType
+  inApp    Boolean
+  push     Boolean
+  email    Boolean
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("notification_preferences")
+}
+
+/// DPDP data-export record (docs/06 §2.6, ADR 0015 §8). One row per
+/// export request; the 1/day limit reads the latest row. v1 generates
+/// the JSON synchronously and returns it inline — no file is stored
+/// and there is no 7-day link yet (a stored file + link is the
+/// documented upgrade when exports grow past inline size).
+model DataExport {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([userId, requestedAt])
+  @@map("data_exports")
+}
+
+/// Simulator showcase snapshot (docs/06 §1.8, ADR 0015 §4). The showcase
+/// updates at most once per day: one row per user, recomputed only when
+/// computedDate (Asia/Kolkata YYYY-MM-DD) is not today. totalEquity is
+/// a 2-decimal string; returnPct is vs the virtual starting cash;
+/// topHoldings is [{ symbol, marketValue }] — symbols only, never
+/// quantities, never exact cash, never order history.
+model SimShowcaseSnapshot {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalEquity  String
+  returnPct    Float
+  topHoldings  Json
+  computedAt   DateTime @default(now())
+  /// Asia/Kolkata calendar date (YYYY-MM-DD) the snapshot is for.
+  computedDate String
+  updatedAt    DateTime @updatedAt
+
+  @@map("sim_showcase_snapshots")
 }

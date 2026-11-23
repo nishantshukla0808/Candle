@@ -80,6 +80,12 @@ export class FakeDb {
   weeklyMemberships = new Map<string, any>(); // `${seasonId}:${userId}`
   weeklyTrades: any[] = [];
   weeklyResults = new Map<string, any>(); // `${seasonId}:${userId}`
+  // --- profiles + settings (Phase 13, docs/06 §1–§2 + docs/18) ------------------------
+  privacySettings = new Map<string, any>(); // userId -> row
+  userSettings = new Map<string, any>(); // userId -> row
+  notificationPrefs = new Map<string, any>(); // `${userId}:${type}` -> row
+  dataExports: any[] = [];
+  showcaseSnapshots = new Map<string, any>(); // userId -> row
 
   reset(): void {
     for (const v of Object.values(this)) {
@@ -100,6 +106,13 @@ export function newUser(overrides: Record<string, any> = {}): any {
     emailVerifiedAt: null,
     countryCode: null,
     countryCodeChangedAt: null,
+    // Phase 13: bio / visibility / display-name cooldown / DPDP deletion.
+    bio: null,
+    profileVisibility: 'PUBLIC',
+    displayNameChangedAt: null,
+    deletedAt: null,
+    deletionRequestedAt: null,
+    deletionScheduledAt: null,
     createdAt: new Date(),
     ...overrides,
   };
@@ -122,6 +135,14 @@ export class FakeAuthRepository {
       roles: input.roles,
       avatarKey: null,
       emailVerifiedAt: null,
+      countryCode: null,
+      countryCodeChangedAt: null,
+      bio: null,
+      profileVisibility: 'PUBLIC',
+      displayNameChangedAt: null,
+      deletedAt: null,
+      deletionRequestedAt: null,
+      deletionScheduledAt: null,
       createdAt: new Date(),
     };
     this.db.users.set(user.id, user);
@@ -141,6 +162,16 @@ export class FakeAuthRepository {
   async setEmailVerified(userId: string): Promise<void> {
     const u = this.db.users.get(userId);
     if (u) u.emailVerifiedAt = new Date();
+  }
+
+  /** Cancels a deletion in its grace period (Phase 13, ADR 0015 §8). */
+  async cancelDeletion(userId: string): Promise<void> {
+    const u = this.db.users.get(userId);
+    if (u) {
+      u.deletedAt = null;
+      u.deletionRequestedAt = null;
+      u.deletionScheduledAt = null;
+    }
   }
 
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
@@ -192,6 +223,7 @@ export class FakeAuthRepository {
       revokedAt: null,
       userAgent: null,
       ipAddress: null,
+      createdAt: new Date(),
       ...input,
     });
   }
@@ -222,6 +254,23 @@ export class FakeAuthRepository {
       if (t.userId === userId && !t.revokedAt) t.revokedAt = new Date();
     }
   }
+
+  /** Active + revoked rows for the settings session list (Phase 13). */
+  async listRefreshTokensByUser(userId: string): Promise<any[]> {
+    return [...this.db.refreshTokens.values()]
+      .filter((t) => t.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map((t) => ({ ...t }));
+  }
+
+  /** Revoke every family except one (settings "revoke all others"). */
+  async revokeAllExceptFamily(userId: string, familyId: string): Promise<void> {
+    for (const t of this.db.refreshTokens.values()) {
+      if (t.userId === userId && t.familyId !== familyId && !t.revokedAt) {
+        t.revokedAt = new Date();
+      }
+    }
+  }
 }
 
 // --- UsersRepository -----------------------------------------------------------
@@ -242,6 +291,12 @@ const toPrivate = (u: any) =>
         emailVerifiedAt: u.emailVerifiedAt,
         countryCode: u.countryCode ?? null,
         countryCodeChangedAt: u.countryCodeChangedAt ?? null,
+        bio: u.bio ?? null,
+        profileVisibility: u.profileVisibility ?? 'PUBLIC',
+        displayNameChangedAt: u.displayNameChangedAt ?? null,
+        deletedAt: u.deletedAt ?? null,
+        deletionRequestedAt: u.deletionRequestedAt ?? null,
+        deletionScheduledAt: u.deletionScheduledAt ?? null,
       }
     : null;
 
@@ -274,6 +329,9 @@ export class FakeUsersRepository {
       displayName?: string | null;
       countryCode?: string | null;
       countryCodeChangedAt?: Date | null;
+      bio?: string | null;
+      profileVisibility?: string;
+      displayNameChangedAt?: Date | null;
     }
   ): Promise<any> {
     const u = this.db.users.get(id);
@@ -281,6 +339,9 @@ export class FakeUsersRepository {
     if (data.displayName !== undefined) u.displayName = data.displayName;
     if (data.countryCode !== undefined) u.countryCode = data.countryCode;
     if (data.countryCodeChangedAt !== undefined) u.countryCodeChangedAt = data.countryCodeChangedAt;
+    if (data.bio !== undefined) u.bio = data.bio;
+    if (data.profileVisibility !== undefined) u.profileVisibility = data.profileVisibility;
+    if (data.displayNameChangedAt !== undefined) u.displayNameChangedAt = data.displayNameChangedAt;
     return toPrivate(u);
   }
 

@@ -200,4 +200,24 @@ export class AppError extends Error {
   static challengeNotPending(message?: string): AppError {
     return new AppError(ErrorCode.CHALLENGE_NOT_PENDING, 409, message);
   }
+  /** Domain error: display name changed too recently (30-day cooldown, ADR 0015 §3). */
+  static profileDisplayNameCooldown(message?: string): AppError {
+    return new AppError(ErrorCode.PROFILE_DISPLAY_NAME_COOLDOWN, 409, message);
+  }
+  /** Domain error: data export already used today (max 1/day, ADR 0015 §8). */
+  static settingsExportDailyLimit(message?: string): AppError {
+    return new AppError(ErrorCode.SETTINGS_EXPORT_DAILY_LIMIT, 429, message);
+  }
+  /** Domain error: no session family with this id belongs to the user. */
+  static settingsSessionNotFound(message?: string): AppError {
+    return new AppError(ErrorCode.SETTINGS_SESSION_NOT_FOUND, 404, message);
+  }
+  /** Domain error: account deletion is already in its 30-day grace period. */
+  static settingsDeleteAlreadyRequested(message?: string): AppError {
+    return new AppError(ErrorCode.SETTINGS_DELETE_ALREADY_REQUESTED, 409, message);
+  }
+  /** Domain error: cancel/delete-state call with no deletion in progress. */
+  static settingsDeleteNotRequested(message?: string): AppError {
+    return new AppError(ErrorCode.SETTINGS_DELETE_NOT_REQUESTED, 409, message);
+  }
 }

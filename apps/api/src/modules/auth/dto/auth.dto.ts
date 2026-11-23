@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -25,7 +25,11 @@ export class RegisterDto {
   @ApiProperty({ required: false, example: 'Nishu' })
   @IsOptional()
   @IsString()
-  @MaxLength(80)
+  @MinLength(2, { message: 'Display name must be at least 2 characters.' })
+  @MaxLength(30, { message: 'Display name must be at most 30 characters.' })
+  @Matches(/^[A-Za-z0-9 ]+$/, {
+    message: 'Display name may only contain letters, numbers, and spaces.',
+  })
   displayName?: string;
 }
 

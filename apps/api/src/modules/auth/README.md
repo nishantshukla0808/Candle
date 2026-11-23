@@ -24,6 +24,14 @@ Phase 1 authentication — blueprint §11, ADR 0002/1.
 - Refresh cookies: httpOnly, `Secure` in production, `SameSite=Lax`,
   path `/api/v1/auth`.
 - These routes sit under the strict rate-limit prefix (`/api/v1/auth`).
+- **Phase 13 (ADR 0015 §6/§8):** login/refresh record the User-Agent
+  on the refresh-token family (`RefreshToken.userAgent`) so the
+  settings session list can label devices. Login inside the 30-day
+  deletion grace **cancels the deletion**; past the grace the login
+  fails generically. `AuthModule` now also exports `AuthRepository`,
+  `PasswordService`, and `RefreshTokenService` for the settings
+  module (sessions + password change); `TokenService` is still the
+  export the global `JwtAuthGuard` uses.
 
 ## Dev note
 

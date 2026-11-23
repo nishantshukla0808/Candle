@@ -38,6 +38,16 @@ Executed trades emit `trade.executed`; the gamification module grants
 `XP.TRADE_EXECUTED` (5 XP) idempotently, in-transaction and via the
 outbox-relay recovery path (ADR 0003/5).
 
+## Profile showcase valuation (Phase 13, ADR 0015 §4)
+
+`SimulatorService.peekPortfolioValuation(userId)` — total equity +
+return % vs starting cash + top 3 holdings by market value, by symbol
+only. **Find-only:** returns `null` when the user never opened the
+simulator and never creates a portfolio — a profile read must not
+create simulator state. The profiles module calls this once per day
+at most (the showcase snapshot); it never calls `getPortfolio` for a
+profile view.
+
 ## Money
 
 `Prisma.Decimal` everywhere; `DECIMAL(18,2)` columns (quantities

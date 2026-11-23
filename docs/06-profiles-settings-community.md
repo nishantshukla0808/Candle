@@ -1,11 +1,28 @@
 # Candle — Profiles, Settings, Post-Game Stats, Chat, Friends, and Community
 
 **Date:** 2026-11-11
-**Status:** DESIGN ONLY — no code for these features yet.
+**Status:** PARTIALLY BUILT — Profiles (§1) + Settings (§2) were built
+in Phase 13 (2026-11-13, ADR 0015, docs/18-phase-13-profiles-settings.md).
+Post-game stats (§3) already exists in `DuelGameResult` (not rebuilt).
+Friends/chat (§4), communities (§5), and the remaining deferred items
+(change-email, login history, 2FA, blocked users, hard-delete scheduler,
+age enforcement) are still LATER — see docs/18 §8 for the reasons.
 **Depends on:** Blueprint 01, Ratings design 04, Duels design 05.
 **Phase 3 is running in parallel:** Ratings module + Duels Step 1
 Question Bank. This doc plans the social side so it can plug into
 Phase 3 when it is ready. It does not change Phase 3.
+
+**Deviations from this design doc, locked in ADR 0015:** (1) FRIENDS
+visibility behaves as PRIVATE until the friends phase lands (§1.5);
+(2) country is locked with no change endpoint at all — the §1.6
+90-day cooldown is gone, and signup collects no country yet, so
+`countryCode` is null for everyone in v1; (3) simulator showcase is
+ON by default, overturning the §1.8 draft; (4) language + timezone
+live only in `UserSettings`, not on the profile (§1.10); (5) export
+is synchronous inline JSON, no stored file / 7-day link yet (§2.6);
+(6) the refresh cookie cannot identify the current session (it is
+path-scoped to `/api/v1/auth`), so the access token carries the
+refresh family as a `fam` claim (§2.2).
 
 **Rule for this whole doc:** the public name is **Ratings**, never ELO.
 All money is virtual. All tickers are fictional. Nothing here is

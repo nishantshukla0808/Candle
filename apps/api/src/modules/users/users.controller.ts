@@ -69,9 +69,12 @@ export class UsersController {
 
   @Public()
   @Get(':id')
-  @ApiOperation({ summary: 'Get the public profile of any user.' })
-  getPublicUser(@Param() params: IdParamDto) {
-    return this.users.getPublicUser(params.id);
+  @ApiOperation({ summary: 'Get the public profile of any user (privacy-filtered).' })
+  getPublicUser(
+    @CurrentUser() viewer: RequestUser | undefined,
+    @Param() params: IdParamDto
+  ) {
+    return this.users.getPublicUser(viewer?.sub ?? null, params.id);
   }
 
   @Public()

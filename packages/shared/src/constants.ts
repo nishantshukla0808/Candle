@@ -526,3 +526,119 @@ export const SPRINT_BOT_BANDS: Array<{
   { maxRating: 1699, momentumThreshold: 0.0025, sizeShare: 0.22 },
   { maxRating: Number.POSITIVE_INFINITY, momentumThreshold: 0.002, sizeShare: 0.25 },
 ] as const;
+
+/**
+ * Profiles + Settings (Phase 13, docs/06 §1–§2, docs/18, ADR 0015).
+ * Product constants, not secrets: safe to share with the web app.
+ */
+
+// --- Profiles (docs/06 §1.3/§1.5/§1.7/§1.8/§1.9, ADR 0015 §1–§4) -----------
+/** Display name: 2–30 chars, letters / numbers / spaces only. */
+export const PROFILE_DISPLAY_NAME_MIN = 2;
+export const PROFILE_DISPLAY_NAME_MAX = 30;
+export const PROFILE_DISPLAY_NAME_PATTERN = /^[A-Za-z0-9 ]+$/;
+/** Bio: max 160 chars; links, phone numbers, and emails are rejected. */
+export const PROFILE_BIO_MAX = 160;
+/** Display name: max 1 change per 30 days (docs/06 §1.3). */
+export const PROFILE_DISPLAY_NAME_COOLDOWN_DAYS = 30;
+/** Duel history on a profile: last 5 games per duel type only, no
+ * total/full history view (Nishu, 2026-11-12; docs/06 §10 extra rule). */
+export const PROFILE_DUEL_HISTORY_PER_TYPE = 5;
+/** Career ladder (docs/06 §1.7): derived from the Candle Rating, never
+ * typed by the user. The title and the tier always agree. */
+export const CAREER_TITLES = [
+  { min: 0, title: 'Intern', tier: 'Bronze' },
+  { min: 1100, title: 'Analyst', tier: 'Silver' },
+  { min: 1300, title: 'Strategist', tier: 'Gold' },
+  { min: 1500, title: 'Risk Manager', tier: 'Platinum' },
+  { min: 1700, title: 'Portfolio Manager', tier: 'Diamond' },
+  { min: 1900, title: 'Market Expert', tier: 'Master' },
+] as const;
+/** Granular privacy toggles (docs/06 §1.5). All default ON for a new
+ * (PUBLIC) profile; the visibility switch itself gates everything. */
+export const PROFILE_PRIVACY_TOGGLES = [
+  'showRatings',
+  'showRank',
+  'showLearningProgress',
+  'showDuelHistory',
+  'showSimulatorShowcase',
+  'showBadges',
+  'showFriendsList',
+  'allowFriendRequests',
+  'allowChallengesFromStrangers',
+  'showOnlineStatus',
+] as const;
+/** Simulator showcase label (docs/06 §1.8, decision 3: ON by default). */
+export const SIM_SHOWCASE_LABEL =
+  'Virtual money only. Not real investing. Not investment advice.';
+/** The showcase is a once-per-day snapshot, never a live feed
+ * (docs/06 §1.8): one computed row per user per Asia/Kolkata date. */
+export const SIM_SHOWCASE_SNAPSHOT_TIMEZONE = 'Asia/Kolkata';
+
+// --- Settings (docs/06 §2, ADR 0015 §5–§9) ------------------------------------
+/** Quiet hours default (docs/06 §2.3, decision 9): 22:00–08:00. */
+export const SETTINGS_QUIET_HOURS_DEFAULT_START = '22:00';
+export const SETTINGS_QUIET_HOURS_DEFAULT_END = '08:00';
+/** Streak reminder default (decision 9): 1/day at 19:00, user's timezone. */
+export const SETTINGS_STREAK_REMINDER_DEFAULT_TIME = '19:00';
+export const SETTINGS_STREAK_REMINDER_MAX_PER_DAY = 1;
+/** Language: English only in v1 (docs/06 §2.5). The field exists so
+ * adding Hindi later is a translation job, not a redesign. */
+export const SETTINGS_LANGUAGES = ['en'] as const;
+/** Timezone default (docs/06 §2.5). Streaks are still computed in
+ * Asia/Kolkata by the existing StreakService — this setting only
+ * changes display times and the streak-reminder time. */
+export const SETTINGS_DEFAULT_TIMEZONE = 'Asia/Kolkata';
+/** DPDP export (docs/06 §2.6): max 1 export per day, per user. */
+export const SETTINGS_EXPORT_DAILY_LIMIT = 1;
+/** DPDP delete (docs/06 §2.6): 30-day grace; login inside the grace
+ * cancels the deletion; after it, the account is hard-deleted by the
+ * future scheduler job (ADR 0015 §8). */
+export const SETTINGS_DELETE_GRACE_DAYS = 30;
+/** Notification types (docs/06 §2.3 table) with their v1 defaults.
+ * Important notifications ON, marketing / new-lesson / product-news OFF.
+ * There is no single "all notifications" switch that turns on marketing. */
+export const NOTIFICATION_TYPES = [
+  'DUEL_INVITE',
+  'DUEL_RESULT',
+  'REMATCH_REQUEST',
+  'FRIEND_REQUEST',
+  'NEW_MESSAGE',
+  'COMMUNITY_REPLY',
+  'COMMUNITY_MENTION',
+  'STREAK_REMINDER',
+  'WEEKLY_LEAGUE_RESULT',
+  'SEASON_EVENT',
+  'NEW_LESSON',
+  'PRODUCT_NEWS',
+] as const;
+export type NotificationTypeKey = (typeof NOTIFICATION_TYPES)[number];
+export const NOTIFICATION_DEFAULTS: Record<
+  NotificationTypeKey,
+  { inApp: boolean; push: boolean; email: boolean }
+> = {
+  DUEL_INVITE: { inApp: true, push: true, email: false },
+  DUEL_RESULT: { inApp: true, push: false, email: false },
+  REMATCH_REQUEST: { inApp: true, push: false, email: false },
+  FRIEND_REQUEST: { inApp: true, push: false, email: false },
+  NEW_MESSAGE: { inApp: true, push: true, email: false },
+  COMMUNITY_REPLY: { inApp: true, push: false, email: false },
+  COMMUNITY_MENTION: { inApp: true, push: false, email: false },
+  STREAK_REMINDER: { inApp: false, push: true, email: false },
+  WEEKLY_LEAGUE_RESULT: { inApp: true, push: false, email: false },
+  SEASON_EVENT: { inApp: true, push: false, email: false },
+  NEW_LESSON: { inApp: false, push: false, email: false },
+  PRODUCT_NEWS: { inApp: false, push: false, email: true },
+};
+/** The 6 seeded communities at launch (docs/06 §5.1, decision 7).
+ * User-created communities are later. No community tables are built
+ * in Phase 13 — this list is the documented seed set for the later
+ * community phase, kept here so the name list has one home. */
+export const SEEDED_COMMUNITIES = [
+  'Budgeting Basics',
+  'Stock Basics',
+  'Mutual Funds 101',
+  'Risk and Safety',
+  'Money Mindset',
+  'Ask Mira',
+] as const;

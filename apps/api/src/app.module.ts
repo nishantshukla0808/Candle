@@ -31,6 +31,8 @@ import { FriendChallengeModule } from './modules/friend-challenge/friend-challen
 import { TradingSprintModule } from './modules/trading-sprint/sprint.module';
 import { CrisisDuelModule } from './modules/crisis-duel/crisis.module';
 import { WeeklyBattleModule } from './modules/weekly-battle/weekly.module';
+import { ProfilesModule } from './modules/profiles/profiles.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 /**
  * AppModule — the module registry (blueprint §4).
@@ -77,6 +79,8 @@ import { WeeklyBattleModule } from './modules/weekly-battle/weekly.module';
     TradingSprintModule,
     CrisisDuelModule,
     WeeklyBattleModule,
+    ProfilesModule,
+    SettingsModule,
   ],
   providers: [
     RequestIdMiddleware,

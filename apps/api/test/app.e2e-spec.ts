@@ -1,4 +1,5 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -31,6 +32,8 @@ import { DuelsRepository } from '../src/modules/duels/duels.repository';
 import { FriendChallengeRepository } from '../src/modules/friend-challenge/friend-challenge.repository';
 import { SprintRepository } from '../src/modules/trading-sprint/sprint.repository';
 import { WeeklyRepository } from '../src/modules/weekly-battle/weekly.repository';
+import { ProfilesRepository } from '../src/modules/profiles/profiles.repository';
+import { SettingsRepository } from '../src/modules/settings/settings.repository';
 import { softReset } from '../src/modules/ratings/rating-math';
 import { OutboxRepository } from '../src/common/events/outbox.repository';
 import { IdempotencyRepository } from '../src/common/idempotency/idempotency.repository';
@@ -47,6 +50,8 @@ import {
   FakeFriendChallengeRepository,
   FakeSprintRepository,
   FakeWeeklyRepository,
+  FakeProfilesRepository,
+  FakeSettingsRepository,
   FakeOutboxRepository,
   FakeIdempotencyRepository,
   FakeTransactionService,
@@ -634,6 +639,10 @@ async function createApp(db: FakeDb): Promise<INestApplication> {
     .useValue(new FakeSprintRepository(db))
     .overrideProvider(WeeklyRepository)
     .useValue(new FakeWeeklyRepository(db))
+    .overrideProvider(ProfilesRepository)
+    .useValue(new FakeProfilesRepository(db))
+    .overrideProvider(SettingsRepository)
+    .useValue(new FakeSettingsRepository(db))
     .overrideProvider(OutboxRepository)
     .useValue(new FakeOutboxRepository(db))
     .overrideProvider(IdempotencyRepository)
@@ -903,9 +912,9 @@ describe('Phase 1 — Gamified Learning Engine (e2e)', () => {
     it('PATCH /users/me updates displayName', async () => {
       const res = await learner.agent
         .patch('/api/v1/users/me')
-        .send({ displayName: 'Carol C.' })
+        .send({ displayName: 'Carol C' })
         .expect(HttpStatus.OK);
-      expect(okBody<{ displayName: string }>(res).data.displayName).toBe('Carol C.');
+      expect(okBody<{ displayName: string }>(res).data.displayName).toBe('Carol C');
     });
 
     it('public profile hides email (no cross-user data leak)', async () => {
@@ -2016,37 +2025,32 @@ describe('Phase 1 — Gamified Learning Engine (e2e)', () => {
       // precedent as the question-bank beforeAll (ADR 0005 §15.13).
     }, 30000);
 
-    it('PATCH /users/me sets a country; invalid codes are rejected at the boundary', async () => {
-      const res = await alice.agent
-        .patch('/api/v1/users/me')
-        .send({ countryCode: 'IN' })
-        .expect(HttpStatus.OK);
-      expect(okBody<{ countryCode: string }>(res).data.countryCode).toBe('IN');
-
-      await bob.agent.patch('/api/v1/users/me').send({ countryCode: 'US' }).expect(HttpStatus.OK);
-
-      // 3 letters, lowercase, and empty all fail validation.
-      for (const bad of ['IND', 'in', '']) {
-        const badRes = await carol.agent
+    it('PATCH /users/me rejects countryCode — country is locked after signup (ADR 0015 §2)', async () => {
+      // @Strict() rejects the unknown property at the boundary, even
+      // when the value itself would be a valid ISO code.
+      for (const body of [{ countryCode: 'IN' }, { displayName: 'Alice A', countryCode: 'IN' }]) {
+        const res = await alice.agent
           .patch('/api/v1/users/me')
-          .send({ countryCode: bad })
+          .send(body)
           .expect(HttpStatus.BAD_REQUEST);
-        expect(errBody(badRes).error.code).toBe(ErrorCode.VALIDATION_FAILED);
+        expect(errBody(res).error.code).toBe(ErrorCode.VALIDATION_FAILED);
       }
+      // Display name alone still works.
+      const ok = await alice.agent
+        .patch('/api/v1/users/me')
+        .send({ displayName: 'Alice A' })
+        .expect(HttpStatus.OK);
+      expect(okBody<{ displayName: string }>(ok).data.displayName).toBe('Alice A');
+      expect(okBody<any>(ok).data.countryCode).toBeNull();
     });
 
-    it('changing country to a different code within 90 days is a 409; same code is a no-op', async () => {
-      const res = await alice.agent
-        .patch('/api/v1/users/me')
-        .send({ countryCode: 'US' })
-        .expect(HttpStatus.CONFLICT);
-      expect(errBody(res).error.code).toBe(ErrorCode.RATING_COUNTRY_COOLDOWN);
-
-      const same = await alice.agent
-        .patch('/api/v1/users/me')
-        .send({ countryCode: 'IN' })
+    it('country-scoped leaderboards are empty in v1 — signup collects no country (ADR 0015 §2)', async () => {
+      const india = await request(server)
+        .get('/api/v1/ratings/leaderboard')
+        .query({ kind: 'LEARNING', scope: 'country', country: 'IN' })
         .expect(HttpStatus.OK);
-      expect(okBody<{ countryCode: string }>(same).data.countryCode).toBe('IN');
+      expect(okBody<any>(india).data.total).toBe(0);
+      expect(okBody<any>(india).data.entries).toEqual([]);
     });
 
     it('GET /ratings/me defaults a fresh user to 1000 / Bronze / provisional', async () => {
@@ -2225,17 +2229,21 @@ describe('Phase 1 — Gamified Learning Engine (e2e)', () => {
         expect(e.displayName).toBeDefined();
       }
 
-      // National boards filter by country; Carol (no country) is global-only.
+      // National boards are empty in v1 — country is locked after signup
+      // and signup collects no country (ADR 0015 §2). Carol (no country)
+      // was global-only before; now everyone is.
       const india = await request(server)
         .get('/api/v1/ratings/leaderboard')
         .query({ kind: 'LEARNING', scope: 'country', country: 'IN' })
         .expect(HttpStatus.OK);
-      expect(okBody<any>(india).data.entries.map((e: any) => e.userId)).toEqual([alice.userId]);
+      expect(okBody<any>(india).data.total).toBe(0);
+      expect(okBody<any>(india).data.entries).toEqual([]);
       const usa = await request(server)
         .get('/api/v1/ratings/leaderboard')
         .query({ kind: 'LEARNING', scope: 'country', country: 'US' })
         .expect(HttpStatus.OK);
-      expect(okBody<any>(usa).data.entries.map((e: any) => e.userId)).toEqual([bob.userId]);
+      expect(okBody<any>(usa).data.total).toBe(0);
+      expect(okBody<any>(usa).data.entries).toEqual([]);
 
       // scope=country without a country is a validation error.
       const bad = await request(server)
@@ -2366,32 +2374,24 @@ describe('Phase 1 — Gamified Learning Engine (e2e)', () => {
       expect(board.entries[0].rating).toBe(1030.4);
     });
 
-    it('after the 90-day cooldown a country change moves national leaderboard membership', async () => {
-      // Age Alice's last country change past the cooldown (white-box: the
-      // suite already mutates the fake store for role promotion).
+    it('country is locked — even after 90 days a country change is rejected (ADR 0015 §2)', async () => {
+      // The 90-day cooldown is gone: country is locked after signup and
+      // there is no change endpoint in v1. Ageing the old timestamp
+      // changes nothing.
       const aliceRow = db.users.get(alice.userId);
       aliceRow.countryCodeChangedAt = new Date(Date.now() - 91 * 24 * 60 * 60 * 1000);
       const res = await alice.agent
         .patch('/api/v1/users/me')
         .send({ countryCode: 'US' })
-        .expect(HttpStatus.OK);
-      expect(okBody<{ countryCode: string }>(res).data.countryCode).toBe('US');
+        .expect(HttpStatus.BAD_REQUEST);
+      expect(errBody(res).error.code).toBe(ErrorCode.VALIDATION_FAILED);
 
-      const india = await request(server)
-        .get('/api/v1/ratings/leaderboard')
-        .query({ kind: 'LEARNING', scope: 'country', country: 'IN' })
-        .expect(HttpStatus.OK);
-      expect(okBody<any>(india).data.total).toBe(0);
-      expect(okBody<any>(india).data.entries).toEqual([]);
       const usa = await request(server)
         .get('/api/v1/ratings/leaderboard')
         .query({ kind: 'LEARNING', scope: 'country', country: 'US' })
         .expect(HttpStatus.OK);
-      expect(
-        okBody<any>(usa)
-          .data.entries.map((e: any) => e.userId)
-          .sort()
-      ).toEqual([alice.userId, bob.userId].sort());
+      expect(okBody<any>(usa).data.total).toBe(0);
+      expect(okBody<any>(usa).data.entries).toEqual([]);
     });
 
     it('season reset is ADMIN-only, halves the distance to 1000, and never double-applies', async () => {
@@ -5735,5 +5735,533 @@ describe('Phase 1 — Gamified Learning Engine (e2e)', () => {
       const res = await request(server).get('/api/v1/nope').expect(HttpStatus.NOT_FOUND);
       expect(errBody(res).error.code).toBe(ErrorCode.NOT_FOUND);
     });
+  });
+
+  // --- profiles + settings (Phase 13, docs/06 §1–§2 + docs/18) ----------------------
+
+  describe('profiles + settings (Phase 13)', () => {
+    type Login = { agent: Agent; userId: string; accessToken: string };
+    let me: Login;
+    let viewer: Login;
+    let third: Login;
+    let opp: Login;
+    let sess: Login;
+    let victim: Login;
+
+    const NEW_PASSWORD = 'N3w!Passphrase99';
+
+    // Seed history rows straight into the fake store (white-box, same
+    // precedent as role promotion): the profiles module only READS these
+    // tables, so seeding rows is the honest way to test the view.
+    function seedGame(userId: string, oppId: string, type: string, i: number, rated = true) {
+      const duelId = randomUUID();
+      const createdAt = new Date(Date.UTC(2026, 10, 1 + i, 12, 0, 0));
+      db.duels.set(duelId, {
+        id: duelId,
+        type,
+        status: 'SETTLED',
+        playerAId: userId,
+        playerBId: oppId,
+        winnerId: userId,
+        createdAt,
+        updatedAt: createdAt,
+      });
+      const row = (uid: string, score: number) => ({
+        id: randomUUID(),
+        duelId,
+        userId: uid,
+        result: uid === userId ? 'WIN' : 'LOSS',
+        score,
+        correct: 5,
+        wrong: 1,
+        skipped: 1,
+        accuracy: 0.71,
+        ratingBefore: rated ? 1200 : null,
+        ratingAfter: rated ? 1224 : null,
+        ratingDelta: rated ? 24 : null,
+        createdAt,
+      });
+      db.duelGameResults.set(`${duelId}:${userId}`, row(userId, 500 + i));
+      if (oppId) db.duelGameResults.set(`${duelId}:${oppId}`, row(oppId, 300));
+    }
+
+    function seedSprint(userId: string, oppId: string, type: string, i: number, rated = true) {
+      const duelId = randomUUID();
+      const createdAt = new Date(Date.UTC(2026, 10, 5, 12, 0, i));
+      db.duels.set(duelId, {
+        id: duelId,
+        type,
+        status: 'SETTLED',
+        playerAId: userId,
+        playerBId: oppId,
+        winnerId: userId,
+        createdAt,
+        updatedAt: createdAt,
+      });
+      db.sprintResults.set(`${duelId}:${userId}`, {
+        id: randomUUID(),
+        duelId,
+        userId,
+        result: 'WIN',
+        finalEquity: new Prisma.Decimal('112000.00'),
+        returnPct: 12,
+        riskAdjustedScore: 10.5,
+        tradeCount: 4,
+        opponentRiskScore: 8,
+        opponentEquity: new Prisma.Decimal('98000.00'),
+        opponentTradeCount: 3,
+        ratingBefore: rated ? 1200 : null,
+        ratingAfter: rated ? 1210 : null,
+        ratingDelta: rated ? 10 : null,
+        createdAt,
+      });
+    }
+
+    function seedWeekly(userId: string, i: number, rated = true) {
+      const seasonId = randomUUID();
+      const createdAt = new Date(Date.UTC(2026, 10, 2 + i, 12, 0, 0));
+      db.weeklySeasons.set(seasonId, { id: seasonId, weekStart: '2026-11-02', createdAt });
+      db.weeklyResults.set(`${seasonId}:${userId}`, {
+        id: randomUUID(),
+        seasonId,
+        userId,
+        rank: 2,
+        leagueSize: 30,
+        tier: 2,
+        nextTier: 3,
+        result: 'WIN',
+        finalEquity: new Prisma.Decimal('105000.00'),
+        returnPct: 5,
+        tradeCount: 6,
+        ratingBefore: rated ? 1100 : null,
+        ratingAfter: rated ? 1112 : null,
+        ratingDelta: rated ? 12 : null,
+        ratingResult: 'WIN',
+        createdAt,
+      });
+    }
+
+    beforeAll(async () => {
+      me = await registerLogin(server, 'p13-me@example.com');
+      viewer = await registerLogin(server, 'p13-viewer@example.com');
+      third = await registerLogin(server, 'p13-third@example.com');
+      opp = await registerLogin(server, 'p13-opp@example.com');
+      sess = await registerLogin(server, 'p13-sess@example.com');
+      victim = await registerLogin(server, 'p13-victim@example.com');
+      await opp.agent.patch('/api/v1/users/me').send({ displayName: 'Opal Opp' });
+
+      // History for `me`: 7 rated LIVE + 1 unrated LIVE (newest, must not
+      // leak in), 3 BLITZ, 2 SPRINT, 1 CRISIS, 2 WEEKLY (1 unrated).
+      for (let i = 0; i < 7; i++) seedGame(me.userId, opp.userId, 'LIVE', i);
+      seedGame(me.userId, opp.userId, 'LIVE', 99, false);
+      for (let i = 0; i < 3; i++) seedGame(me.userId, opp.userId, 'BLITZ', i);
+      seedSprint(me.userId, opp.userId, 'SPRINT', 0);
+      seedSprint(me.userId, opp.userId, 'SPRINT', 1);
+      seedSprint(me.userId, opp.userId, 'CRISIS', 0);
+      seedWeekly(me.userId, 0);
+      seedWeekly(me.userId, 1, false);
+
+      // Simulator showcase for `me`: a portfolio + one NVLT holding.
+      const nvlt = [...db.instruments.values()].find((i: any) => i.symbol === 'NVLT');
+      const portfolioId = randomUUID();
+      db.portfolios.set(portfolioId, {
+        id: portfolioId,
+        userId: me.userId,
+        cash: new Prisma.Decimal('90000.00'),
+      });
+      db.portfoliosByUser.set(me.userId, db.portfolios.get(portfolioId));
+      db.holdings.set(`${portfolioId}:${nvlt.id}`, {
+        portfolioId,
+        instrumentId: nvlt.id,
+        quantity: new Prisma.Decimal('10'),
+        avgCost: new Prisma.Decimal('842.50'),
+      });
+    }, 60000);
+
+    it('owner profile: career title from Candle Rating, level, joined month, showcase ON by default', async () => {
+      const res = await me.agent.get('/api/v1/users/me').expect(HttpStatus.OK);
+      const profile = okBody<any>(res).data;
+      expect(profile.displayName).toBe('Test User');
+      expect(profile.careerTitle).toBe('Intern'); // 1000 Candle Rating
+      expect(profile.level).toBe(1);
+      expect(profile.joinedMonth).toBe('Nov 2026');
+      expect(profile.countryCode).toBeNull();
+      expect(profile.ratings.learning.rating).toBe(1000);
+      expect(profile.ratings.learning.tier).toBe('Bronze');
+      expect(profile.ratings.learning.provisional).toBe(true);
+      expect(profile.email).toBe('p13-me@example.com');
+      expect(profile.privacy.showRatings).toBe(true);
+      // Showcase is ON by default and ACTIVE: the seeded portfolio exists.
+      const show = profile.simulatorShowcase;
+      expect(show.status).toBe('ACTIVE');
+      expect(show.label).toContain('Virtual money only. Not real investing.');
+      expect(show.topHoldings[0].symbol).toBe('NVLT');
+      expect(show.totalEquity).toMatch(/^\d+\.\d{2}$/);
+      expect(show.asOf).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(profile.duelHistory.LIVE.length).toBe(5);
+    });
+
+    it('public profile hides email; ratings sub-endpoint shows Ratings when allowed', async () => {
+      const res = await viewer.agent.get(`/api/v1/users/${me.userId}`).expect(HttpStatus.OK);
+      const pub = okBody<any>(res).data;
+      expect(pub.id).toBe(me.userId);
+      expect(pub.email).toBeUndefined();
+      expect(pub.isPrivate).toBe(false);
+      expect(pub.ratings.candleRating).toBe(1000);
+      expect(pub.careerTitle).toBe('Intern');
+      expect(pub.duelHistory.LIVE.length).toBe(5);
+
+      const ratings = await viewer.agent
+        .get(`/api/v1/users/${me.userId}/ratings`)
+        .expect(HttpStatus.OK);
+      const body = okBody<any>(ratings).data;
+      expect(body.ratings.candleRating).toBe(1000);
+      expect(body.careerTitle).toBe('Intern');
+      expect(body.rank.learning.globalRank).toBeNull();
+
+      // Logged-out visitors can read a PUBLIC profile too.
+      await request(server).get(`/api/v1/users/${me.userId}`).expect(HttpStatus.OK);
+    });
+
+    it('duel history: last 5 rated per type, newest first, unrated never appears', async () => {
+      const res = await viewer.agent.get(`/api/v1/users/${me.userId}/duels`).expect(HttpStatus.OK);
+      const h = okBody<any>(res).data.duelHistory;
+      expect(h.LIVE.map((g: any) => g.myScore)).toEqual([506, 505, 504, 503, 502]);
+      expect(h.LIVE[0].opponent.displayName).toBe('Opal Opp');
+      expect(h.LIVE[0].opponentScore).toBe(300);
+      expect(h.LIVE[0].ratingDelta).toBe(24);
+      expect(h.BLITZ.length).toBe(3);
+      expect(h.SPRINT.length).toBe(2);
+      expect(h.CRISIS.length).toBe(1);
+      expect(h.WEEKLY.length).toBe(1); // the unrated week is excluded
+      expect(h.CASE).toEqual([]);
+      expect(h.CHART).toEqual([]);
+      expect(h.DAILY).toEqual([]);
+    });
+
+    it('simulator showcase: no activity yet for a user who never opened the simulator', async () => {
+      const res = await third.agent.get('/api/v1/users/me').expect(HttpStatus.OK);
+      const show = okBody<any>(res).data.simulatorShowcase;
+      expect(show.status).toBe('NO_ACTIVITY');
+      expect(show.message).toContain('No simulator activity yet');
+    });
+
+    it('visibility: PRIVATE and FRIENDS both hide everything from others; owner still sees it all', async () => {
+      for (const visibility of ['PRIVATE', 'FRIENDS']) {
+        await third.agent
+          .patch('/api/v1/users/me/privacy')
+          .send({ visibility })
+          .expect(HttpStatus.OK);
+
+        const res = await viewer.agent.get(`/api/v1/users/${third.userId}`).expect(HttpStatus.OK);
+        const pub = okBody<any>(res).data;
+        expect(pub.isPrivate).toBe(true);
+        expect(pub.message).toContain('private');
+        expect(pub.ratings).toBeNull();
+        expect(pub.duelHistory).toBeNull();
+        expect(pub.simulatorShowcase).toBeNull();
+        expect(pub.badges).toBeNull();
+        expect(pub.careerTitle).toBeNull();
+
+        const duels = await viewer.agent
+          .get(`/api/v1/users/${third.userId}/duels`)
+          .expect(HttpStatus.OK);
+        expect(okBody<any>(duels).data.duelHistory).toBeNull();
+        const ratings = await viewer.agent
+          .get(`/api/v1/users/${third.userId}/ratings`)
+          .expect(HttpStatus.OK);
+        expect(okBody<any>(ratings).data.ratings).toBeNull();
+
+        // The owner still sees their own full profile.
+        const own = await third.agent.get(`/api/v1/users/${third.userId}`).expect(HttpStatus.OK);
+        expect(okBody<any>(own).data.isPrivate).toBe(false);
+        expect(okBody<any>(own).data.ratings).not.toBeNull();
+      }
+      // Restore PUBLIC for the next test.
+      await third.agent
+        .patch('/api/v1/users/me/privacy')
+        .send({ visibility: 'PUBLIC' })
+        .expect(HttpStatus.OK);
+    });
+
+    it('visibility: a granular toggle OFF returns null for that section, never an empty list', async () => {
+      await third.agent
+        .patch('/api/v1/users/me/privacy')
+        .send({ showDuelHistory: false })
+        .expect(HttpStatus.OK);
+      const res = await viewer.agent.get(`/api/v1/users/${third.userId}`).expect(HttpStatus.OK);
+      const pub = okBody<any>(res).data;
+      expect(pub.duelHistory).toBeNull();
+      expect(pub.ratings).not.toBeNull(); // other sections unaffected
+      const duels = await viewer.agent
+        .get(`/api/v1/users/${third.userId}/duels`)
+        .expect(HttpStatus.OK);
+      expect(okBody<any>(duels).data.duelHistory).toBeNull();
+      await third.agent
+        .patch('/api/v1/users/me/privacy')
+        .send({ showDuelHistory: true })
+        .expect(HttpStatus.OK);
+    });
+
+    it('settings: defaults, update, and validation of language / timezone / quiet hours', async () => {
+      const res = await me.agent.get('/api/v1/settings/me').expect(HttpStatus.OK);
+      const body = okBody<any>(res).data;
+      expect(body.email).toBe('p13-me@example.com');
+      expect(body.settings.theme).toBe('SYSTEM');
+      expect(body.settings.timezone).toBe('Asia/Kolkata');
+      expect(body.settings.quietHoursStart).toBe('22:00');
+      expect(body.settings.quietHoursEnd).toBe('08:00');
+      expect(body.settings.streakReminderTime).toBe('19:00');
+      expect(body.deletion).toBeNull();
+
+      const updated = await me.agent
+        .patch('/api/v1/settings/me')
+        .send({ theme: 'DARK', timezone: 'America/New_York', quietHoursStart: '23:00' })
+        .expect(HttpStatus.OK);
+      const settings = okBody<any>(updated).data;
+      expect(settings.theme).toBe('DARK');
+      expect(settings.timezone).toBe('America/New_York');
+      expect(settings.quietHoursStart).toBe('23:00');
+
+      for (const bad of [
+        { language: 'hi' },
+        { timezone: 'Not/AZone' },
+        { quietHoursStart: '10pm' },
+        { streakReminderTime: '25:00' },
+      ]) {
+        const badRes = await me.agent
+          .patch('/api/v1/settings/me')
+          .send(bad)
+          .expect(HttpStatus.BAD_REQUEST);
+        expect(errBody(badRes).error.code).toBe(ErrorCode.VALIDATION_FAILED);
+      }
+      // Restore the default timezone so later tests see IST behaviour.
+      await me.agent.patch('/api/v1/settings/me').send({ timezone: 'Asia/Kolkata' });
+    });
+
+    it('notifications: all 12 types with documented defaults; one type can be changed', async () => {
+      const res = await me.agent.get('/api/v1/settings/notifications').expect(HttpStatus.OK);
+      const prefs = okBody<any[]>(res).data;
+      expect(prefs.length).toBe(12);
+      const byType = new Map(prefs.map((p: any) => [p.type, p]));
+      expect(byType.get('DUEL_INVITE')).toMatchObject({ inApp: true, push: true, isDefault: true });
+      expect(byType.get('PRODUCT_NEWS')).toMatchObject({ inApp: false, push: false });
+
+      const updated = await me.agent
+        .patch('/api/v1/settings/notifications')
+        .send({ type: 'PRODUCT_NEWS', push: true })
+        .expect(HttpStatus.OK);
+      expect(okBody<any>(updated).data).toMatchObject({
+        type: 'PRODUCT_NEWS',
+        push: true,
+        inApp: false,
+        isDefault: false,
+      });
+      const again = await me.agent.get('/api/v1/settings/notifications').expect(HttpStatus.OK);
+      const news = okBody<any[]>(again).data.find((p: any) => p.type === 'PRODUCT_NEWS');
+      expect(news.push).toBe(true);
+      expect(news.isDefault).toBe(false);
+    });
+
+    it('export: returns JSON inline, then a second export the same day is a 429', async () => {
+      const res = await me.agent.post('/api/v1/settings/export').expect(HttpStatus.OK);
+      const data = okBody<any>(res).data;
+      expect(data.exportId).toBeDefined();
+      expect(data.user.email).toBe('p13-me@example.com');
+      expect(data.profile.duelHistory.LIVE.length).toBe(5);
+      expect(Array.isArray(data.xpLedger)).toBe(true);
+      expect(Array.isArray(data.simulatorOrders)).toBe(true);
+      expect(data.settings).toBeDefined();
+      expect(Array.isArray(data.notifications)).toBe(true);
+
+      const second = await me.agent
+        .post('/api/v1/settings/export')
+        .expect(HttpStatus.TOO_MANY_REQUESTS);
+      expect(errBody(second).error.code).toBe(ErrorCode.SETTINGS_EXPORT_DAILY_LIMIT);
+    });
+
+    it('profile validation: bio links rejected, display name charset + 30-day cooldown enforced', async () => {
+      const linkBio = await me.agent
+        .patch('/api/v1/users/me')
+        .send({ bio: 'Check my site https://example.com' })
+        .expect(HttpStatus.BAD_REQUEST);
+      expect(errBody(linkBio).error.code).toBe(ErrorCode.VALIDATION_FAILED);
+
+      const okBio = await me.agent
+        .patch('/api/v1/users/me')
+        .send({ bio: 'Learning markets, one duel at a time.' })
+        .expect(HttpStatus.OK);
+      expect(okBody<any>(okBio).data.bio).toBe('Learning markets, one duel at a time.');
+
+      const badName = await me.agent
+        .patch('/api/v1/users/me')
+        .send({ displayName: 'Bad!Name' })
+        .expect(HttpStatus.BAD_REQUEST);
+      expect(errBody(badName).error.code).toBe(ErrorCode.VALIDATION_FAILED);
+
+      const first = await me.agent
+        .patch('/api/v1/users/me')
+        .send({ displayName: 'Me Two' })
+        .expect(HttpStatus.OK);
+      expect(okBody<any>(first).data.displayName).toBe('Me Two');
+
+      const second = await me.agent
+        .patch('/api/v1/users/me')
+        .send({ displayName: 'Me Three' })
+        .expect(HttpStatus.CONFLICT);
+      expect(errBody(second).error.code).toBe(ErrorCode.PROFILE_DISPLAY_NAME_COOLDOWN);
+    });
+
+    it('sessions: list families, revoke one, revoke all others (idempotent, keeps current)', async () => {
+      // A second login for the same user = a second refresh family.
+      const agentB = request.agent(server);
+      const loginB = await agentB
+        .post('/api/v1/auth/login')
+        .send({ email: 'p13-sess@example.com', password: PASSWORD })
+        .expect(HttpStatus.OK);
+      const tokenB = okBody<{ accessToken: string }>(loginB).data.accessToken;
+      agentB.set('Authorization', `Bearer ${tokenB}`);
+
+      const list = await sess.agent.get('/api/v1/settings/sessions').expect(HttpStatus.OK);
+      const sessions = okBody<any[]>(list).data;
+      expect(sessions.length).toBe(2);
+      const current = sessions.find((s: any) => s.isCurrent);
+      const other = sessions.find((s: any) => !s.isCurrent);
+      expect(current).toBeDefined();
+      expect(other).toBeDefined();
+      expect(current.familyId).not.toBe(other.familyId);
+
+      // Revoke the other family: B's refresh now fails.
+      await sess.agent.delete(`/api/v1/settings/sessions/${other.familyId}`).expect(HttpStatus.OK);
+      await agentB.post('/api/v1/auth/refresh').expect(HttpStatus.UNAUTHORIZED);
+
+      // Revoke a family that does not exist: 404.
+      const missing = await sess.agent
+        .delete('/api/v1/settings/sessions/11111111-1111-4111-8111-111111111111')
+        .expect(HttpStatus.NOT_FOUND);
+      expect(errBody(missing).error.code).toBe(ErrorCode.SETTINGS_SESSION_NOT_FOUND);
+
+      // B logs in again; A revokes all others: B's refresh fails, A's works.
+      const loginB2 = await agentB
+        .post('/api/v1/auth/login')
+        .send({ email: 'p13-sess@example.com', password: PASSWORD })
+        .expect(HttpStatus.OK);
+      agentB.set(
+        'Authorization',
+        `Bearer ${okBody<{ accessToken: string }>(loginB2).data.accessToken}`
+      );
+      const revoked = await sess.agent.delete('/api/v1/settings/sessions').expect(HttpStatus.OK);
+      expect(okBody<any>(revoked).data.keptCurrent).toBe(true);
+      await agentB.post('/api/v1/auth/refresh').expect(HttpStatus.UNAUTHORIZED);
+      const refreshed = await sess.agent.post('/api/v1/auth/refresh').expect(HttpStatus.OK);
+      sess.agent.set(
+        'Authorization',
+        `Bearer ${okBody<{ accessToken: string }>(refreshed).data.accessToken}`
+      );
+
+      // Revoke-all-others is idempotent: a second call keeps the current
+      // family and leaves exactly one live session.
+      const again = await sess.agent.delete('/api/v1/settings/sessions').expect(HttpStatus.OK);
+      expect(okBody<any>(again).data.keptCurrent).toBe(true);
+      const listAfter = await sess.agent.get('/api/v1/settings/sessions').expect(HttpStatus.OK);
+      const remaining = okBody<any[]>(listAfter).data;
+      expect(remaining.length).toBe(1);
+      expect(remaining[0].isCurrent).toBe(true);
+    });
+
+    it('password change revokes other sessions only; delete: deactivate, login cancels, past grace blocks login', async () => {
+      const agentB = request.agent(server);
+      const loginB = await agentB
+        .post('/api/v1/auth/login')
+        .send({ email: 'p13-victim@example.com', password: PASSWORD })
+        .expect(HttpStatus.OK);
+      agentB.set(
+        'Authorization',
+        `Bearer ${okBody<{ accessToken: string }>(loginB).data.accessToken}`
+      );
+
+      // Wrong current password: 401.
+      await victim.agent
+        .post('/api/v1/settings/change-password')
+        .send({ currentPassword: 'Wrong!Pass12', newPassword: NEW_PASSWORD })
+        .expect(HttpStatus.UNAUTHORIZED);
+
+      await victim.agent
+        .post('/api/v1/settings/change-password')
+        .send({ currentPassword: PASSWORD, newPassword: NEW_PASSWORD })
+        .expect(HttpStatus.OK);
+      // B's refresh fails; A's still works.
+      await agentB.post('/api/v1/auth/refresh').expect(HttpStatus.UNAUTHORIZED);
+      const refreshed = await victim.agent.post('/api/v1/auth/refresh').expect(HttpStatus.OK);
+      victim.agent.set(
+        'Authorization',
+        `Bearer ${okBody<{ accessToken: string }>(refreshed).data.accessToken}`
+      );
+      // Old password no longer logs in; the new one does.
+      await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: 'p13-victim@example.com', password: PASSWORD })
+        .expect(HttpStatus.UNAUTHORIZED);
+      await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: 'p13-victim@example.com', password: NEW_PASSWORD })
+        .expect(HttpStatus.OK);
+
+      // Delete: wrong password is a 401.
+      await victim.agent
+        .post('/api/v1/settings/delete-account')
+        .send({ password: 'Wrong!Pass12' })
+        .expect(HttpStatus.UNAUTHORIZED);
+
+      const del = await victim.agent
+        .post('/api/v1/settings/delete-account')
+        .send({ password: NEW_PASSWORD })
+        .expect(HttpStatus.OK);
+      const delBody = okBody<any>(del).data;
+      expect(delBody.deletionRequestedAt).toBeDefined();
+      expect(delBody.deletionScheduledAt).toBeDefined();
+      const scheduled = new Date(delBody.deletionScheduledAt).getTime();
+      const requested = new Date(delBody.deletionRequestedAt).getTime();
+      expect(scheduled - requested).toBe(30 * 24 * 60 * 60 * 1000);
+
+      // Deactivated at once: profile hidden, no login.
+      await victim.agent.get('/api/v1/users/me').expect(HttpStatus.NOT_FOUND);
+      await request(server).get(`/api/v1/users/${victim.userId}`).expect(HttpStatus.NOT_FOUND);
+
+      // A second delete request during grace is a 409 (the still-valid
+      // access token can reach the endpoint for up to 15 minutes).
+      const again = await victim.agent
+        .post('/api/v1/settings/delete-account')
+        .send({ password: NEW_PASSWORD })
+        .expect(HttpStatus.CONFLICT);
+      expect(errBody(again).error.code).toBe(ErrorCode.SETTINGS_DELETE_ALREADY_REQUESTED);
+
+      // Login inside the grace cancels the deletion.
+      const loginAgain = await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: 'p13-victim@example.com', password: NEW_PASSWORD })
+        .expect(HttpStatus.OK);
+      const tokenAgain = okBody<{ accessToken: string }>(loginAgain).data.accessToken;
+      const settings = await request(server)
+        .get('/api/v1/settings/me')
+        .set('Authorization', `Bearer ${tokenAgain}`)
+        .expect(HttpStatus.OK);
+      expect(okBody<any>(settings).data.deletion).toBeNull();
+
+      // Past the grace, login fails generically (no enumeration).
+      await victim.agent
+        .post('/api/v1/settings/delete-account')
+        .send({ password: NEW_PASSWORD })
+        .expect(HttpStatus.OK);
+      const row = db.users.get(victim.userId);
+      row.deletionScheduledAt = new Date(Date.now() - 1000);
+      await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: 'p13-victim@example.com', password: NEW_PASSWORD })
+        .expect(HttpStatus.UNAUTHORIZED);
+      // ~10 Argon2 hashes in this test (logins + password checks) exceed
+      // Jest's 5 s default on a loaded VM — same precedent as the
+      // question-bank beforeAll.
+    }, 30000);
   });
 });

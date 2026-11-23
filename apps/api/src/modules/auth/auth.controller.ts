@@ -67,9 +67,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Log in. Sets the refresh cookie; returns an access token.' })
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response
   ): Promise<{ user: unknown; accessToken: string }> {
-    const { user, pair } = await this.auth.login(dto);
+    const { user, pair } = await this.auth.login(dto, req.headers['user-agent']);
     res.cookie(this.refreshCookieName(), pair.refreshToken, this.cookieOptions());
     return { user, accessToken: pair.accessToken };
   }
@@ -83,7 +84,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response
   ): Promise<{ accessToken: string }> {
     const presented = req.cookies?.[this.refreshCookieName()] as string | undefined;
-    const pair = await this.auth.refresh(presented);
+    const pair = await this.auth.refresh(presented, req.headers['user-agent']);
     res.cookie(this.refreshCookieName(), pair.refreshToken, this.cookieOptions());
     return { accessToken: pair.accessToken };
   }

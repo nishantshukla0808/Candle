@@ -111,7 +111,7 @@ export class AuthService {
 
   // --- login / logout / refresh ------------------------------------------------
 
-  async login(dto: LoginDto): Promise<{ user: PublicUser; pair: TokenPair }> {
+  async login(dto: LoginDto, userAgent?: string | null): Promise<{ user: PublicUser; pair: TokenPair }> {
     const email = dto.email.trim().toLowerCase();
     const user = await this.repo.findUserByEmail(email);
     if (!user || !(await this.passwords.verify(dto.password, user.passwordHash))) {
@@ -119,18 +119,36 @@ export class AuthService {
     }
     // `user` is defined here: failedLogin always throws.
     const confirmed = user as User;
+    // Phase 13 (docs/06 §2.6, ADR 0015 §8): a deactivated account
+    // inside its 30-day grace cancels its deletion by logging in.
+    // Past the grace the account is gone (the scheduler purges it)
+    // and the login fails generically — never reveal why (no user
+    // enumeration, blueprint §11).
+    if (confirmed.deletedAt) {
+      if (
+        confirmed.deletionScheduledAt &&
+        confirmed.deletionScheduledAt.getTime() > Date.now()
+      ) {
+        await this.repo.cancelDeletion(confirmed.id);
+        this.logger.info('Account deletion cancelled by login during grace', {
+          userId: confirmed.id,
+        });
+      } else {
+        await this.failedLogin(email);
+      }
+    }
     if (!confirmed.emailVerifiedAt) {
       throw AppError.emailNotVerified();
     }
     await this.redis.del(loginFailKey(email));
-    const pair = await this.refreshTokens.issuePair(confirmed);
+    const pair = await this.refreshTokens.issuePair(confirmed, userAgent);
     this.logger.info('User logged in', { userId: confirmed.id });
     return { user: toPublicUser(confirmed), pair };
   }
 
-  async refresh(presented: string | undefined): Promise<TokenPair> {
+  async refresh(presented: string | undefined, userAgent?: string | null): Promise<TokenPair> {
     if (!presented) throw AppError.unauthorized('Session expired. Please log in again.');
-    return this.refreshTokens.rotate(presented);
+    return this.refreshTokens.rotate(presented, userAgent);
   }
 
   async logout(presented: string | undefined): Promise<void> {

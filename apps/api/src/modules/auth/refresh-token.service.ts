@@ -38,7 +38,7 @@ export class RefreshTokenService {
   ) {}
 
   /** Issues a fresh family (first login / registration auto-login). */
-  async issuePair(user: User, tx?: TxClient): Promise<TokenPair> {
+  async issuePair(user: User, userAgent?: string | null, tx?: TxClient): Promise<TokenPair> {
     const raw = this.passwords.generateToken();
     const familyId = randomUUID();
     const refreshExpiresAt = new Date(Date.now() + this.config.JWT_REFRESH_TTL_SECONDS * 1000);
@@ -48,15 +48,19 @@ export class RefreshTokenService {
         familyId,
         tokenHash: this.passwords.hashToken(raw),
         expiresAt: refreshExpiresAt,
+        userAgent: userAgent ?? null,
       },
       tx
     );
     return {
-      accessToken: this.tokens.signAccessToken({
-        sub: user.id,
-        email: user.email,
-        roles: user.roles,
-      }),
+      accessToken: this.tokens.signAccessToken(
+        {
+          sub: user.id,
+          email: user.email,
+          roles: user.roles,
+        },
+        familyId
+      ),
       refreshToken: raw,
       refreshExpiresAt,
     };
@@ -65,8 +69,10 @@ export class RefreshTokenService {
   /**
    * Rotates the presented refresh token. Returns the new pair.
    * Throws generic UNAUTHORIZED on any failure (no reason leaked).
+   * The new row records the CURRENT User-Agent, so the session list
+   * follows the device the family was last used from (ADR 0015 §6).
    */
-  async rotate(presented: string, tx?: TxClient): Promise<TokenPair> {
+  async rotate(presented: string, userAgent?: string | null, tx?: TxClient): Promise<TokenPair> {
     const row = await this.repo.findRefreshTokenByHash(this.passwords.hashToken(presented), tx);
     if (!row || row.revokedAt || row.expiresAt.getTime() < Date.now()) {
       // Possible reuse of a rotated token: kill the whole family.
@@ -87,15 +93,19 @@ export class RefreshTokenService {
         familyId: row.familyId,
         tokenHash: this.passwords.hashToken(raw),
         expiresAt: refreshExpiresAt,
+        userAgent: userAgent ?? row.userAgent ?? null,
       },
       tx
     );
     return {
-      accessToken: this.tokens.signAccessToken({
-        sub: row.user.id,
-        email: row.user.email,
-        roles: row.user.roles,
-      }),
+      accessToken: this.tokens.signAccessToken(
+        {
+          sub: row.user.id,
+          email: row.user.email,
+          roles: row.user.roles,
+        },
+        row.familyId
+      ),
       refreshToken: raw,
       refreshExpiresAt,
     };

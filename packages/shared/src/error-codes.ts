@@ -71,6 +71,12 @@ export enum ErrorCode {
   CHALLENGE_ALREADY_PENDING = 'CHALLENGE_ALREADY_PENDING',
   CHALLENGE_EXPIRED = 'CHALLENGE_EXPIRED',
   CHALLENGE_NOT_PENDING = 'CHALLENGE_NOT_PENDING',
+  // Phase 13 domain codes (Profiles + Settings — docs/06 §1–§2, docs/18).
+  PROFILE_DISPLAY_NAME_COOLDOWN = 'PROFILE_DISPLAY_NAME_COOLDOWN',
+  SETTINGS_EXPORT_DAILY_LIMIT = 'SETTINGS_EXPORT_DAILY_LIMIT',
+  SETTINGS_SESSION_NOT_FOUND = 'SETTINGS_SESSION_NOT_FOUND',
+  SETTINGS_DELETE_ALREADY_REQUESTED = 'SETTINGS_DELETE_ALREADY_REQUESTED',
+  SETTINGS_DELETE_NOT_REQUESTED = 'SETTINGS_DELETE_NOT_REQUESTED',
 }
 
 /** Human-readable, client-safe default message per code. */
@@ -140,6 +146,14 @@ export const ERROR_DEFAULT_MESSAGES: Record<ErrorCode, string> = {
     'You already have a pending challenge with this player for this duel type.',
   [ErrorCode.CHALLENGE_EXPIRED]: 'This challenge has expired. Send a new one to play.',
   [ErrorCode.CHALLENGE_NOT_PENDING]: 'This challenge is no longer waiting for an answer.',
+  [ErrorCode.PROFILE_DISPLAY_NAME_COOLDOWN]:
+    'Display name can only be changed once every 30 days.',
+  [ErrorCode.SETTINGS_EXPORT_DAILY_LIMIT]:
+    'You can export your data at most once per day. Please try again tomorrow.',
+  [ErrorCode.SETTINGS_SESSION_NOT_FOUND]: 'That session was not found.',
+  [ErrorCode.SETTINGS_DELETE_ALREADY_REQUESTED]:
+    'Account deletion has already been requested.',
+  [ErrorCode.SETTINGS_DELETE_NOT_REQUESTED]: 'No account deletion is in progress.',
 };
 
 /** One per-field validation problem, returned under `error.details`. */

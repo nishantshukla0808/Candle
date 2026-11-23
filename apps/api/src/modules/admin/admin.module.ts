@@ -11,5 +11,6 @@ import { AuditService } from './audit.service';
 @Module({
   controllers: [AdminController],
   providers: [AdminService, AdminRepository, AuditService],
+  exports: [AuditService],
 })
 export class AdminModule {}

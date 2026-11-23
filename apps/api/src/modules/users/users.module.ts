@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RatingsModule } from '../ratings/ratings.module';
+import { ProfilesModule } from '../profiles/profiles.module';
 import { UsersController } from './users.controller';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
@@ -8,12 +8,18 @@ import { UsersService } from './users.service';
  * UsersModule — profile + avatar (blueprint §4/§10/§11).
  * Exports UsersService for other modules that need public profiles.
  *
- * Imports RatingsModule so a country change can keep the denormalised
- * countryCode on rating rows in sync (ADR 0005/8). One-directional:
- * RatingsModule imports nothing from users, so there is no cycle.
+ * Imports ProfilesModule: the profile itself (GET/PATCH /users/me,
+ * GET /users/:id) lives there in Phase 13 — this module keeps only
+ * avatar handling. One-directional: ProfilesModule never imports
+ * UsersModule (it reads the User table through its own repository),
+ * so there is no cycle.
+ *
+ * The RatingsModule import is GONE (Phase 13, ADR 0015 §2): country
+ * is locked after signup, so nothing in users syncs country to
+ * ratings any more.
  */
 @Module({
-  imports: [RatingsModule],
+  imports: [ProfilesModule],
   controllers: [UsersController],
   providers: [UsersRepository, UsersService],
   exports: [UsersService, UsersRepository],

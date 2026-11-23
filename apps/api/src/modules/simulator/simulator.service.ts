@@ -64,6 +64,23 @@ export interface PlaceOrderResponse {
   rewards: RewardSummary;
 }
 
+/**
+ * Simulator showcase valuation (Phase 13, docs/06 §1.8, ADR 0015 §4):
+ * virtual total equity + return vs starting cash + top 3 holdings by
+ * market value, by symbol only. Never exact cash, never quantities,
+ * never order history. Null when the user never opened the simulator
+ * (no portfolio row) — the showcase then shows "No simulator activity
+ * yet", not ₹0.
+ */
+export interface ShowcaseValuation {
+  /** cash + Σ market value, 2dp string. */
+  totalEquity: string;
+  /** (equity − starting cash) / starting cash × 100, 2dp. */
+  returnPct: number;
+  /** Top 3 holdings by market value: symbol + market value only. */
+  topHoldings: Array<{ symbol: string; marketValue: string }>;
+}
+
 const STARTING_CASH = new Prisma.Decimal(SIMULATOR_STARTING_CASH);
 const ZERO = new Prisma.Decimal(0);
 const TWO_DP = 2;
@@ -129,6 +146,44 @@ export class SimulatorService {
       });
     }
     return { cash: fmt(portfolio.cash), totalEquity: fmt(equity), holdings: views };
+  }
+
+  /**
+   * Showcase valuation (Phase 13, ADR 0015 §4). Find-only: returns null
+   * when the user has no portfolio (never opened the simulator) and
+   * never creates one — a profile read must not create simulator state.
+   * Valuation is identical to getPortfolio (same price engine, same
+   * rounding); only the shape differs (no cash, no quantities).
+   */
+  async peekPortfolioValuation(
+    userId: string,
+    at: Date = new Date()
+  ): Promise<ShowcaseValuation | null> {
+    const portfolio = await this.repo.findPortfolioByUser(userId);
+    if (!portfolio) return null;
+    const holdings = await this.repo.listHoldings(portfolio.id);
+    const instruments = await this.repo.listActiveInstruments();
+    const byId = new Map(instruments.map((i) => [i.id, i]));
+
+    let equity = portfolio.cash;
+    const valued: Array<{ symbol: string; marketValue: Prisma.Decimal }> = [];
+    for (const h of holdings) {
+      const instrument = byId.get(h.instrumentId);
+      if (!instrument) continue;
+      const price = PriceEngine.price(instrument.symbol, instrument.basePrice, at);
+      const marketValue = money(price.mul(h.quantity));
+      equity = equity.add(marketValue);
+      valued.push({ symbol: instrument.symbol, marketValue });
+    }
+    valued.sort((a, b) => b.marketValue.comparedTo(a.marketValue));
+    const returnPct = Number(
+      equity.sub(STARTING_CASH).div(STARTING_CASH).mul(100).toFixed(2)
+    );
+    return {
+      totalEquity: fmt(equity),
+      returnPct,
+      topHoldings: valued.slice(0, 3).map((v) => ({ symbol: v.symbol, marketValue: fmt(v.marketValue) })),
+    };
   }
 
   // --- orders ---------------------------------------------------------------------------

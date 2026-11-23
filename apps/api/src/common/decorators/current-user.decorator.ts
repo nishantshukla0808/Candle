@@ -8,6 +8,9 @@ export interface RequestUser {
   sub: string; // user id (JWT subject)
   email?: string;
   roles: string[];
+  /** Refresh-token family this access token was issued for (ADR 0015 §9).
+   * Absent on tokens minted before Phase 13 — treat as "unknown session". */
+  familyId?: string;
 }
 
 /** Extracts the authenticated user (or a field of it) from the request. */

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ProfileVisibility } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import type { TxClient } from '../../database/tx-client';
 
@@ -22,6 +23,12 @@ export interface UserPrivateRow extends UserPublicRow {
   emailVerifiedAt: Date | null;
   countryCode: string | null;
   countryCodeChangedAt: Date | null;
+  bio: string | null;
+  profileVisibility: ProfileVisibility;
+  displayNameChangedAt: Date | null;
+  deletedAt: Date | null;
+  deletionRequestedAt: Date | null;
+  deletionScheduledAt: Date | null;
 }
 
 @Injectable()
@@ -54,6 +61,12 @@ export class UsersRepository {
         emailVerifiedAt: true,
         countryCode: true,
         countryCodeChangedAt: true,
+        bio: true,
+        profileVisibility: true,
+        displayNameChangedAt: true,
+        deletedAt: true,
+        deletionRequestedAt: true,
+        deletionScheduledAt: true,
       },
     });
   }
@@ -79,6 +92,9 @@ export class UsersRepository {
       displayName?: string | null;
       countryCode?: string | null;
       countryCodeChangedAt?: Date | null;
+      bio?: string | null;
+      profileVisibility?: ProfileVisibility;
+      displayNameChangedAt?: Date | null;
     },
     tx?: TxClient
   ): Promise<UserPrivateRow> {
@@ -95,6 +111,12 @@ export class UsersRepository {
         emailVerifiedAt: true,
         countryCode: true,
         countryCodeChangedAt: true,
+        bio: true,
+        profileVisibility: true,
+        displayNameChangedAt: true,
+        deletedAt: true,
+        deletionRequestedAt: true,
+        deletionScheduledAt: true,
       },
     });
   }

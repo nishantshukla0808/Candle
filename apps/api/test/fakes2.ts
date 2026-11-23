@@ -1344,6 +1344,12 @@ export class FakeSimulatorRepository {
   async countOrders(portfolioId: string): Promise<number> {
     return [...this.db.orders.values()].filter((o) => o.portfolioId === portfolioId).length;
   }
+
+  /** Find-only lookup for the profile showcase (Phase 13) — never creates. */
+  async findPortfolioByUser(userId: string): Promise<any | null> {
+    const p = this.db.portfoliosByUser.get(userId);
+    return p ? { ...p, cash: new Prisma.Decimal(p.cash) } : null;
+  }
 }
 
 // --- OnboardingRepository (docs/03) ----------------------------------------------
@@ -1925,5 +1931,352 @@ export class FakeQuestionBankRepository {
       ip: data.ip ?? null,
       ...data,
     });
+  }
+}
+
+// --- ProfilesRepository (Phase 13, docs/06 §1 + docs/18) ---------------------------
+
+export class FakeProfilesRepository {
+  constructor(private readonly db: FakeDb) {}
+
+  async findProfileUser(id: string): Promise<any | null> {
+    const u = this.db.users.get(id);
+    if (!u) return null;
+    return {
+      id: u.id,
+      displayName: u.displayName ?? null,
+      avatarKey: u.avatarKey ?? null,
+      bio: u.bio ?? null,
+      countryCode: u.countryCode ?? null,
+      profileVisibility: u.profileVisibility ?? 'PUBLIC',
+      displayNameChangedAt: u.displayNameChangedAt ?? null,
+      email: u.email,
+      roles: u.roles,
+      emailVerifiedAt: u.emailVerifiedAt ?? null,
+      createdAt: u.createdAt,
+      deletedAt: u.deletedAt ?? null,
+      deletionRequestedAt: u.deletionRequestedAt ?? null,
+      deletionScheduledAt: u.deletionScheduledAt ?? null,
+    };
+  }
+
+  async updateProfileFields(id: string, data: any): Promise<any> {
+    const u = this.db.users.get(id);
+    if (!u) throw new Error('user not found');
+    Object.assign(u, data);
+    return this.findProfileUser(id);
+  }
+
+  async getOrCreatePrivacy(userId: string): Promise<any> {
+    let row = this.db.privacySettings.get(userId);
+    if (!row) {
+      row = {
+        userId,
+        showRatings: true,
+        showRank: true,
+        showLearningProgress: true,
+        showDuelHistory: true,
+        showSimulatorShowcase: true,
+        showBadges: true,
+        showFriendsList: true,
+        allowFriendRequests: true,
+        allowChallengesFromStrangers: true,
+        showOnlineStatus: true,
+      };
+      this.db.privacySettings.set(userId, row);
+    }
+    return { ...row };
+  }
+
+  async updatePrivacy(userId: string, patch: any): Promise<any> {
+    const row = await this.getOrCreatePrivacy(userId);
+    Object.assign(this.db.privacySettings.get(userId), patch);
+    return { ...row, ...patch };
+  }
+
+  async listRecentGameResults(userId: string, type: string, take: number): Promise<any[]> {
+    return [...this.db.duelGameResults.values()]
+      .filter((r) => r.userId === userId && r.ratingBefore !== null && r.ratingBefore !== undefined)
+      .map((r) => ({ ...r, duel: this.db.duels.get(r.duelId) }))
+      .filter((r) => r.duel && r.duel.type === type)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, take)
+      .map((r) => ({ ...r, duel: { ...r.duel } }));
+  }
+
+  async findGameResult(duelId: string, userId: string): Promise<any | null> {
+    const r = this.db.duelGameResults.get(`${duelId}:${userId}`);
+    if (!r) return null;
+    const duel = this.db.duels.get(duelId);
+    return { ...r, duel: duel ? { ...duel } : null };
+  }
+
+  async listRecentSprintResults(userId: string, type: string, take: number): Promise<any[]> {
+    return [...this.db.sprintResults.values()]
+      .filter((r) => r.userId === userId && r.ratingDelta !== null && r.ratingDelta !== undefined)
+      .map((r) => ({ ...r, duel: this.db.duels.get(r.duelId) }))
+      .filter((r) => r.duel && r.duel.type === type)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, take)
+      .map((r) => ({ ...r, duel: { ...r.duel } }));
+  }
+
+  async listRecentWeeklyResults(userId: string, take: number): Promise<any[]> {
+    return [...this.db.weeklyResults.values()]
+      .filter((r) => r.userId === userId && r.ratingDelta !== null && r.ratingDelta !== undefined)
+      .map((r) => {
+        const season = this.db.weeklySeasons.get(r.seasonId);
+        return { ...r, weekStart: season?.weekStart ?? null };
+      })
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, take);
+  }
+
+  async findDisplayNames(ids: string[]): Promise<any[]> {
+    return ids
+      .map((id) => this.db.users.get(id))
+      .filter(Boolean)
+      .map((u) => ({ id: u.id, displayName: u.displayName ?? null }));
+  }
+
+  async findStats(userId: string): Promise<any | null> {
+    const s = this.db.userStats.get(userId);
+    return s ? { ...s } : null;
+  }
+
+  async listBadges(userId: string): Promise<any[]> {
+    return this.db.userBadgeRows
+      .filter((r) => r.userId === userId)
+      .map((r) => {
+        const badge = this.db.badges.get(r.badgeId);
+        return {
+          id: r.badgeId,
+          slug: badge?.slug ?? r.badgeId,
+          name: badge?.name ?? r.badgeId,
+          description: badge?.description ?? '',
+          awardedAt: r.awardedAt,
+        };
+      });
+  }
+
+  async listXpLedger(userId: string, take: number): Promise<any[]> {
+    return this.db.xpLedger
+      .filter((e) => e.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, take)
+      .map((e) => ({ ...e }));
+  }
+
+  async listTrackProgress(userId: string): Promise<any[]> {
+    const completed = new Set(
+      [...this.db.lessonCompletions.values()]
+        .filter((c) => c.userId === userId)
+        .map((c) => c.lessonId)
+    );
+    return sortedByOrder([...this.db.tracks.values()]).map((t) => {
+      const lessonIds = sortedByOrder(
+        [...this.db.modules.values()].filter((m) => m.trackId === t.id)
+      ).flatMap((m) =>
+        sortedByOrder([...this.db.lessons.values()].filter((l) => l.moduleId === m.id)).map(
+          (l) => l.id
+        )
+      );
+      return {
+        trackId: t.id,
+        slug: t.slug,
+        title: t.title,
+        completedLessons: lessonIds.filter((id) => completed.has(id)).length,
+        totalLessons: lessonIds.length,
+      };
+    });
+  }
+
+  async listSimOrders(userId: string, take: number): Promise<any[]> {
+    const portfolio = this.db.portfoliosByUser.get(userId);
+    if (!portfolio) return [];
+    return [...this.db.orders.values()]
+      .filter((o) => o.portfolioId === portfolio.id)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, take)
+      .map((o) => {
+        const instrument = this.db.instruments.get(o.instrumentId);
+        return {
+          id: o.id,
+          symbol: instrument?.symbol ?? 'UNKNOWN',
+          side: o.side,
+          quantity: String(o.quantity),
+          price: String(o.price),
+          totalValue: String(o.totalValue),
+          executedAt: o.createdAt,
+        };
+      });
+  }
+
+  async findShowcaseSnapshot(userId: string): Promise<any | null> {
+    const s = this.db.showcaseSnapshots.get(userId);
+    return s ? { ...s, topHoldings: JSON.parse(JSON.stringify(s.topHoldings)) } : null;
+  }
+
+  async upsertShowcaseSnapshot(
+    userId: string,
+    data: { totalEquity: string; returnPct: number; topHoldings: any; computedDate: string }
+  ): Promise<any> {
+    const row = { userId, computedAt: new Date(), ...data };
+    this.db.showcaseSnapshots.set(userId, row);
+    return { ...row, topHoldings: JSON.parse(JSON.stringify(row.topHoldings)) };
+  }
+}
+
+// --- SettingsRepository (Phase 13, docs/06 §2 + docs/18) --------------------------
+
+export class FakeSettingsRepository {
+  constructor(private readonly db: FakeDb) {}
+
+  async findSettingsUser(id: string): Promise<any | null> {
+    const u = this.db.users.get(id);
+    if (!u) return null;
+    return {
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName ?? null,
+      deletedAt: u.deletedAt ?? null,
+      deletionRequestedAt: u.deletionRequestedAt ?? null,
+      deletionScheduledAt: u.deletionScheduledAt ?? null,
+    };
+  }
+
+  async getOrCreateSettings(userId: string): Promise<any> {
+    let row = this.db.userSettings.get(userId);
+    if (!row) {
+      row = {
+        userId,
+        theme: 'SYSTEM',
+        fontSize: 'NORMAL',
+        reduceMotion: false,
+        language: 'en',
+        timezone: 'Asia/Kolkata',
+        quietHoursStart: '22:00',
+        quietHoursEnd: '08:00',
+        streakReminderEnabled: true,
+        streakReminderTime: '19:00',
+        marketingConsent: false,
+      };
+      this.db.userSettings.set(userId, row);
+    }
+    return { ...row };
+  }
+
+  async updateSettings(userId: string, patch: any): Promise<any> {
+    const row = await this.getOrCreateSettings(userId);
+    Object.assign(this.db.userSettings.get(userId), patch);
+    return { ...row, ...patch };
+  }
+
+  async listNotificationPrefs(userId: string): Promise<any[]> {
+    return [...this.db.notificationPrefs.values()]
+      .filter((p) => p.userId === userId)
+      .map((p) => ({ ...p }));
+  }
+
+  async upsertNotificationPref(
+    userId: string,
+    type: string,
+    channels: { inApp?: boolean; push?: boolean; email?: boolean },
+    defaults: { inApp: boolean; push: boolean; email: boolean }
+  ): Promise<any> {
+    const key = `${userId}:${type}`;
+    const existing = this.db.notificationPrefs.get(key);
+    const row = {
+      userId,
+      type,
+      inApp: channels.inApp ?? existing?.inApp ?? defaults.inApp,
+      push: channels.push ?? existing?.push ?? defaults.push,
+      email: channels.email ?? existing?.email ?? defaults.email,
+    };
+    this.db.notificationPrefs.set(key, row);
+    return { ...row };
+  }
+
+  async createDataExport(userId: string): Promise<any> {
+    const row = { id: randomUUID(), userId, requestedAt: new Date() };
+    this.db.dataExports.push(row);
+    return { ...row };
+  }
+
+  async findLastDataExport(userId: string): Promise<any | null> {
+    const rows = this.db.dataExports
+      .filter((e) => e.userId === userId)
+      .sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+    return rows[0] ? { ...rows[0] } : null;
+  }
+
+  async requestDeletion(userId: string, requestedAt: Date, scheduledAt: Date): Promise<any> {
+    const u = this.db.users.get(userId);
+    if (!u) throw new Error('user not found');
+    u.deletedAt = requestedAt;
+    u.deletionRequestedAt = requestedAt;
+    u.deletionScheduledAt = scheduledAt;
+    return this.findSettingsUser(userId);
+  }
+
+  async cancelDeletion(userId: string): Promise<any> {
+    const u = this.db.users.get(userId);
+    if (!u) throw new Error('user not found');
+    u.deletedAt = null;
+    u.deletionRequestedAt = null;
+    u.deletionScheduledAt = null;
+    return this.findSettingsUser(userId);
+  }
+
+  async findUsersPendingPurge(now: Date): Promise<any[]> {
+    return [...this.db.users.values()]
+      .filter((u) => u.deletedAt && u.deletionScheduledAt && u.deletionScheduledAt <= now)
+      .map((u) => ({ id: u.id }));
+  }
+
+  async findOrCreateTombstoneUser(): Promise<any> {
+    for (const u of this.db.users.values()) {
+      if (u.email === 'deleted-user@candle.invalid') return { id: u.id };
+    }
+    const tombstone = newUser({
+      email: 'deleted-user@candle.invalid',
+      displayName: 'Deleted user',
+      passwordHash: 'unusable',
+      emailVerifiedAt: new Date(),
+    });
+    this.db.users.set(tombstone.id, tombstone);
+    return { id: tombstone.id };
+  }
+
+  async reassignUserRatings(userId: string, tombstoneId: string): Promise<void> {
+    for (const h of this.db.ratingHistory) {
+      if (h.userId === userId) h.userId = tombstoneId;
+    }
+    for (const [key, r] of [...this.db.userRatings.entries()]) {
+      if (r.userId === userId) {
+        const tombKey = `${tombstoneId}:${r.kind}`;
+        if (!this.db.userRatings.has(tombKey)) {
+          this.db.userRatings.set(tombKey, { ...r, userId: tombstoneId });
+        }
+        this.db.userRatings.delete(key);
+      }
+    }
+  }
+
+  async deleteUserById(userId: string): Promise<void> {
+    this.db.users.delete(userId);
+    this.db.privacySettings.delete(userId);
+    this.db.userSettings.delete(userId);
+    for (const [key] of [...this.db.notificationPrefs.entries()]) {
+      if (key.startsWith(`${userId}:`)) this.db.notificationPrefs.delete(key);
+    }
+    this.db.dataExports = this.db.dataExports.filter((e) => e.userId !== userId);
+    this.db.showcaseSnapshots.delete(userId);
+    this.db.userStats.delete(userId);
+    this.db.userBadgeRows = this.db.userBadgeRows.filter((r) => r.userId !== userId);
+    this.db.xpLedger = this.db.xpLedger.filter((e) => e.userId !== userId);
+    for (const t of [...this.db.refreshTokens.values()]) {
+      if (t.userId === userId) this.db.refreshTokens.delete(t.id);
+    }
   }
 }
